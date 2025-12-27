@@ -1,0 +1,8 @@
+{
+  "name": "Setup do Concurseiro",
+  "description": "Uma plataforma completa para concurseiros com materiais de estudo, provas anteriores, dicas estratégicas e cronogramas personalizados.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
