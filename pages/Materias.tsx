@@ -1,130 +1,439 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TabButton from '../components/TabButton';
 import { Subject } from '../types';
-import { SUBJECTS } from '../constants';
 import { getStudySummary } from '../services/geminiService';
+import { supabase } from '../lib/supabaseClient';
+import { useAdmin } from '../hooks/useAdmin';
+import Modal from '../components/Modal';
+
+interface SubjectTopic {
+    id: string;
+    subject_id: string;
+    title: string;
+    content: string;
+    external_link: string;
+    created_at: string;
+}
+
+interface SubjectMaterial {
+    id: string;
+    subject_id: string;
+    topic_id?: string;
+    name: string;
+    url: string;
+    type: string;
+    category: string;
+}
 
 const Materias: React.FC = () => {
+    const { isAdmin } = useAdmin();
+    const [subjects, setSubjects] = useState<Subject[]>([]);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [activeTab, setActiveTab] = useState<'apostilas' | 'questoes' | 'mapas'>('apostilas');
-    const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+    const [topics, setTopics] = useState<SubjectTopic[]>([]);
+    const [materials, setMaterials] = useState<SubjectMaterial[]>([]);
+    const [selectedTopic, setSelectedTopic] = useState<SubjectTopic | null>(null);
     const [summary, setSummary] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleTopicClick = async (topic: string) => {
-        if (!selectedSubject) return;
-        setSelectedTopic(topic);
+    // Admin Modal State
+    const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+    const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+    const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const [newSubject, setNewSubject] = useState<Partial<Subject>>({
+        name: '', description: '', icon: 'fa-book', topics: []
+    });
+
+    const [newTopic, setNewTopic] = useState<Partial<SubjectTopic>>({
+        title: '', content: '', external_link: ''
+    });
+
+    const [newMaterial, setNewMaterial] = useState<{ name: string, url: string, category: string }>({
+        name: '', url: '', category: ''
+    });
+
+    useEffect(() => {
+        fetchSubjects();
+    }, []);
+
+    useEffect(() => {
+        if (selectedSubject) {
+            fetchTopics(selectedSubject.id);
+            fetchMaterials(selectedSubject.id);
+        }
+    }, [selectedSubject]);
+
+    const fetchSubjects = async () => {
+        const { data, error } = await supabase.from('subjects').select('*').order('name');
+        if (data) setSubjects(data);
+    };
+
+    const fetchTopics = async (subjectId: string) => {
+        const { data } = await supabase.from('subject_topics').select('*').eq('subject_id', subjectId).order('created_at');
+        if (data) setTopics(data);
+    };
+
+    const fetchMaterials = async (subjectId: string) => {
+        const { data } = await supabase.from('subject_materials').select('*').eq('subject_id', subjectId);
+        if (data) setMaterials(data);
+    };
+
+    const handleAddSubject = async () => {
+        if (!newSubject.name) return;
+        const { error } = await supabase.from('subjects').insert([newSubject]);
+        if (!error) {
+            setIsSubjectModalOpen(false);
+            setNewSubject({ name: '', description: '', icon: 'fa-book', topics: [] });
+            fetchSubjects();
+        }
+    };
+
+    const handleAddTopic = async () => {
+        if (!newTopic.title || !selectedSubject) return;
+        const { error } = await supabase.from('subject_topics').insert([{
+            ...newTopic,
+            subject_id: selectedSubject.id
+        }]);
+        if (!error) {
+            setIsTopicModalOpen(false);
+            setNewTopic({ title: '', content: '', external_link: '' });
+            fetchTopics(selectedSubject.id);
+        }
+    };
+
+    const handleAddMaterialLink = async () => {
+        if (!newMaterial.name || !newMaterial.url || !selectedSubject) return;
+
+        const { error } = await supabase.from('subject_materials').insert({
+            subject_id: selectedSubject.id,
+            name: newMaterial.name,
+            url: newMaterial.url,
+            type: 'LINK',
+            category: newMaterial.category
+        });
+
+        if (!error) {
+            setIsMaterialModalOpen(false);
+            setNewMaterial({ name: '', url: '', category: '' });
+            fetchMaterials(selectedSubject.id);
+        } else {
+            alert('Erro ao adicionar link');
+        }
+    };
+
+    const handleSummary = async (topicName: string) => {
         setLoading(true);
         setSummary(null);
-        const result = await getStudySummary(selectedSubject.name, topic);
+        // Temporary logic for summary, ideally should fetch based on topic content
+        const result = await getStudySummary(selectedSubject?.name || '', topicName);
         setSummary(result);
         setLoading(false);
     };
 
+    // Kept for "Apostilas" file upload if needed, or remove if "Apostilas" also moves to links entirely. 
+    // The user request specified "tanto em exercícios como em mapas mentais", implying Apostilas might stay as is or is separate.
+    // However, I'll keep the file upload for Apostilas as implemented previously unless requested otherwise.
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, topicId?: string, category: string = 'apostila') => {
+        if (!e.target.files || e.target.files.length === 0 || !selectedSubject) return;
+        const file = e.target.files[0];
+        setUploading(true);
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${selectedSubject.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage.from('materials').upload(filePath, file);
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(filePath);
+
+            const { error: dbError } = await supabase.from('subject_materials').insert({
+                subject_id: selectedSubject.id,
+                topic_id: topicId || null,
+                name: file.name,
+                type: fileExt?.toUpperCase(),
+                url: publicUrl,
+                category
+            });
+
+            if (dbError) throw dbError;
+            fetchMaterials(selectedSubject.id);
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao enviar arquivo');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDeleteMaterial = async (id: string) => {
+        if (!confirm('Excluir arquivo?')) return;
+        await supabase.from('subject_materials').delete().eq('id', id);
+        if (selectedSubject) fetchMaterials(selectedSubject.id);
+    };
+
+    const handleDeleteSubject = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm('Tem certeza?')) return;
+        await supabase.from('subjects').delete().eq('id', id);
+        fetchSubjects();
+    };
+
+    const openMaterialModal = (category: string) => {
+        setNewMaterial({ name: '', url: '', category });
+        setIsMaterialModalOpen(true);
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
-            <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
-                <i className="fas fa-book-reader text-sky-600"></i> Matérias de Estudo
-            </h2>
+            {/* Subject Modal */}
+            <Modal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} title="Nova Matéria">
+                <div className="space-y-4">
+                    <input type="text" placeholder="Nome" className="w-full p-2 border rounded" value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} />
+                    <textarea placeholder="Descrição" className="w-full p-2 border rounded" value={newSubject.description} onChange={e => setNewSubject({ ...newSubject, description: e.target.value })} />
+                    <input type="text" placeholder="Ícone (fa-book)" className="w-full p-2 border rounded" value={newSubject.icon} onChange={e => setNewSubject({ ...newSubject, icon: e.target.value })} />
+                    <button onClick={handleAddSubject} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar</button>
+                </div>
+            </Modal>
+
+            {/* Topic Modal */}
+            <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title="Novo Assunto">
+                <div className="space-y-4">
+                    <input type="text" placeholder="Título do Assunto" className="w-full p-2 border rounded" value={newTopic.title} onChange={e => setNewTopic({ ...newTopic, title: e.target.value })} />
+                    <textarea placeholder="Conteúdo (Texto para leitura)" className="w-full p-2 border rounded h-32" value={newTopic.content} onChange={e => setNewTopic({ ...newTopic, content: e.target.value })} />
+                    <input type="text" placeholder="Link Externo (URL)" className="w-full p-2 border rounded" value={newTopic.external_link} onChange={e => setNewTopic({ ...newTopic, external_link: e.target.value })} />
+                    <button onClick={handleAddTopic} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar Assunto</button>
+                </div>
+            </Modal>
+
+            {/* Material Link Modal */}
+            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={`Adicionar Link em ${newMaterial.category === 'questao' ? 'Exercícios' : 'Mapas Mentais'}`}>
+                <div className="space-y-4">
+                    <input type="text" placeholder="Nome / Título" className="w-full p-2 border rounded" value={newMaterial.name} onChange={e => setNewMaterial({ ...newMaterial, name: e.target.value })} />
+                    <input type="text" placeholder="URL do Link" className="w-full p-2 border rounded" value={newMaterial.url} onChange={e => setNewMaterial({ ...newMaterial, url: e.target.value })} />
+                    <button onClick={handleAddMaterialLink} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar Link</button>
+                </div>
+            </Modal>
 
             {!selectedSubject ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {SUBJECTS.map((s) => (
-                        <div
-                            key={s.id}
-                            onClick={() => setSelectedSubject(s)}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-sky-300 cursor-pointer transition-all group"
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="bg-sky-50 p-3 rounded-xl group-hover:bg-sky-600 transition-colors">
-                                    <i className={`fas ${s.icon} text-sky-600 group-hover:text-white text-2xl`}></i>
+                <div>
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                            <i className="fas fa-book-reader text-sky-600"></i> Matérias de Estudo
+                        </h2>
+                        {isAdmin && (
+                            <button onClick={() => setIsSubjectModalOpen(true)} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center gap-2">
+                                <i className="fas fa-plus"></i> Nova Matéria
+                            </button>
+                        )}
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {subjects.map((s) => (
+                            <div key={s.id} onClick={() => setSelectedSubject(s)} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-sky-300 cursor-pointer transition-all group relative">
+                                {isAdmin && (
+                                    <button onClick={(e) => handleDeleteSubject(e, s.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 z-10">
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                )}
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="bg-sky-50 p-3 rounded-xl group-hover:bg-sky-600 transition-colors">
+                                        <i className={`fas ${s.icon} text-sky-600 group-hover:text-white text-2xl`}></i>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800">{s.name}</h3>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800">{s.name}</h3>
+                                <p className="text-slate-500 mb-4 text-sm">{s.description}</p>
                             </div>
-                            <p className="text-slate-500 mb-4 text-sm">{s.description}</p>
-                            <div className="flex flex-wrap gap-2">
-                                {s.topics.slice(0, 3).map(t => (
-                                    <span key={t} className="bg-slate-50 text-slate-500 px-2 py-1 rounded text-[10px] font-bold uppercase">{t}</span>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-6">
-                    <button
-                        onClick={() => { setSelectedSubject(null); setActiveTab('apostilas'); setSelectedTopic(null); setSummary(null); }}
-                        className="text-sky-600 font-medium flex items-center gap-2 hover:underline"
-                    >
-                        <i className="fas fa-arrow-left"></i> Voltar para lista de matérias
+                    <button onClick={() => { setSelectedSubject(null); setSelectedTopic(null); }} className="text-sky-600 font-medium flex items-center gap-2 hover:underline">
+                        <i className="fas fa-arrow-left"></i> Voltar
                     </button>
 
                     <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                        <div className="p-6 bg-slate-50 border-b flex items-center gap-4">
-                            <div className="bg-sky-600 p-3 rounded-xl">
-                                <i className={`fas ${selectedSubject.icon} text-white text-2xl`}></i>
+                        <div className="p-6 bg-slate-50 border-b flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-sky-600 p-3 rounded-xl">
+                                    <i className={`fas ${selectedSubject.icon} text-white text-2xl`}></i>
+                                </div>
+                                <h3 className="text-2xl font-bold text-slate-800">{selectedSubject.name}</h3>
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-800">{selectedSubject.name}</h3>
+                            {isAdmin && (
+                                <div className="flex gap-2">
+                                    <label className="bg-white border text-sky-600 px-4 py-2 rounded-lg font-bold hover:bg-sky-50 cursor-pointer flex items-center gap-2">
+                                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, undefined, 'apostila')} />
+                                        <i className="fas fa-upload"></i> Upload Geral (Apostilas)
+                                    </label>
+                                    <button onClick={() => setIsTopicModalOpen(true)} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                        <i className="fas fa-plus"></i> Novo Assunto
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex border-b overflow-x-auto whitespace-nowrap">
                             <TabButton active={activeTab === 'apostilas'} onClick={() => setActiveTab('apostilas')} icon="fa-book" label="Apostilas" />
-                            <TabButton active={activeTab === 'questoes'} onClick={() => setActiveTab('questoes')} icon="fa-tasks" label="Questões Anteriores" />
+                            <TabButton active={activeTab === 'questoes'} onClick={() => setActiveTab('questoes')} icon="fa-tasks" label="Exercícios" />
                             <TabButton active={activeTab === 'mapas'} onClick={() => setActiveTab('mapas')} icon="fa-project-diagram" label="Mapas Mentais" />
                         </div>
 
                         <div className="p-6 min-h-[400px]">
                             {activeTab === 'apostilas' && (
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    {selectedSubject.topics.map((t, idx) => (
-                                        <div key={idx} onClick={() => handleTopicClick(t)} className="p-4 border border-slate-100 rounded-xl hover:bg-sky-50 transition-colors cursor-pointer flex justify-between items-center group">
-                                            <div>
-                                                <h4 className="font-bold text-slate-800">{t}</h4>
-                                                <p className="text-xs text-slate-500">Apostila Completa • Ver Resumo IA</p>
+                                <div className="grid md:grid-cols-2 gap-6 items-start">
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-slate-400 text-xs uppercase">Assuntos</h4>
+                                        {topics.map(topic => (
+                                            <div key={topic.id} onClick={() => setSelectedTopic(topic)} className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedTopic?.id === topic.id ? 'border-sky-500 bg-sky-50' : 'border-slate-100 hover:border-sky-300'}`}>
+                                                <div className="flex justify-between items-center">
+                                                    <h4 className="font-bold text-slate-800">{topic.title}</h4>
+                                                    <i className="fas fa-chevron-right text-slate-400 text-xs"></i>
+                                                </div>
                                             </div>
-                                            {loading && selectedTopic === t ? (
-                                                <i className="fas fa-circle-notch animate-spin text-sky-600"></i>
-                                            ) : (
-                                                <i className="fas fa-magic text-sky-400 group-hover:text-sky-600"></i>
-                                            )}
-                                        </div>
-                                    ))}
-                                    {selectedTopic && summary && (
-                                        <div className="col-span-full mt-8 p-8 bg-sky-50 rounded-3xl border border-sky-100 animate-fade-in shadow-inner">
-                                            <h4 className="text-xl font-bold text-sky-800 mb-4">Resumo Estratégico: {selectedTopic}</h4>
-                                            <div className="prose prose-sky text-slate-700 whitespace-pre-wrap leading-relaxed">{summary}</div>
+                                        ))}
+                                        {topics.length === 0 && <p className="text-slate-400 text-sm">Nenhum assunto cadastrado ainda.</p>}
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {selectedTopic ? (
+                                            <div className="animate-fade-in space-y-6">
+                                                <div className="border-b pb-4">
+                                                    <h3 className="text-2xl font-bold text-sky-800 mb-2">{selectedTopic.title}</h3>
+                                                    {selectedTopic.content && (
+                                                        <div className="prose text-slate-600 whitespace-pre-wrap text-sm mb-4">
+                                                            {selectedTopic.content}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        <button onClick={() => handleSummary(selectedTopic.title)} className="text-sky-600 text-sm font-bold hover:underline">
+                                                            <i className="fas fa-magic mr-1"></i> Gerar Resumo IA
+                                                        </button>
+                                                        {selectedTopic.external_link && (
+                                                            <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200">
+                                                                <i className="fas fa-external-link-alt mr-1"></i> Acessar Link
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Files for this Topic */}
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h4 className="font-bold text-slate-700 text-sm">Arquivos do Assunto</h4>
+                                                        {isAdmin && (
+                                                            <label className="text-xs font-bold text-sky-600 cursor-pointer hover:underline">
+                                                                <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, selectedTopic.id)} />
+                                                                + Adicionar Arquivo
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {materials.filter(m => m.topic_id === selectedTopic.id).map(m => (
+                                                            <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                                    <i className={`fas fa-file-pdf text-red-500`}></i>
+                                                                    <span className="text-sm font-medium text-slate-700 truncate">{m.name}</span>
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <a href={m.url} target="_blank" rel="noreferrer" className="text-sky-500 hover:text-sky-700"><i className="fas fa-download"></i></a>
+                                                                    {isAdmin && <button onClick={() => handleDeleteMaterial(m.id)} className="text-red-400 hover:text-red-600"><i className="fas fa-trash"></i></button>}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {materials.filter(m => m.topic_id === selectedTopic.id).length === 0 && <p className="text-xs text-slate-400">Nenhum arquivo.</p>}
+                                                    </div>
+                                                </div>
+
+                                                {summary && (
+                                                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
+                                                        <h4 className="font-bold text-sky-800 mb-2">Resumo IA</h4>
+                                                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{summary}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-100 rounded-xl p-8">
+                                                <i className="fas fa-arrow-left text-2xl mb-2"></i>
+                                                <p>Selecione um assunto para ver o conteúdo</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'questoes' && (
+                                <div>
+                                    {isAdmin && (
+                                        <div className="mb-4">
+                                            <button onClick={() => openMaterialModal('questao')} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                                <i className="fas fa-plus"></i> Novo Exercício (Link)
+                                            </button>
                                         </div>
                                     )}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                        {materials.filter(m => m.category === 'questao').map(m => (
+                                            <div key={m.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-sky-500 transition-all relative flex flex-col justify-between group">
+                                                {isAdmin && (
+                                                    <button onClick={() => handleDeleteMaterial(m.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
+                                                        <i className="fas fa-trash"></i>
+                                                    </button>
+                                                )}
+
+                                                <div className="mb-4">
+                                                    <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center mb-4">
+                                                        <i className="fas fa-tasks text-sky-600 text-xl"></i>
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
+                                                    <p className="text-slate-400 text-xs mt-1">Exercício / Link</p>
+                                                </div>
+
+                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-colors">
+                                                    <i className="fas fa-external-link-alt mr-1"></i> Acessar
+                                                </a>
+                                            </div>
+                                        ))}
+                                        {materials.filter(m => m.category === 'questao').length === 0 && <p className="text-slate-400 text-sm">Nenhum exercício cadastrado ainda.</p>}
+                                    </div>
                                 </div>
                             )}
-                            {activeTab === 'questoes' && (
-                                <div className="grid gap-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="p-6 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-sky-300 transition-all cursor-pointer">
-                                            <div className="flex justify-between mb-3">
-                                                <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded uppercase">Questão #{i * 124}</span>
-                                                <span className="text-xs text-sky-600 font-bold">Banca CEBRASPE</span>
-                                            </div>
-                                            <p className="text-slate-700 font-medium mb-4 line-clamp-2">Considerando o tema de {selectedSubject.topics[i % selectedSubject.topics.length]}, julgue os itens a seguir de acordo com a jurisprudência dominante...</p>
-                                            <div className="flex gap-4 text-xs font-bold">
-                                                <span className="text-green-600">Resolver agora</span>
-                                                <span className="text-slate-400">Ver comentários</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+
                             {activeTab === 'mapas' && (
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                                    {selectedSubject.topics.slice(0, 4).map((t, idx) => (
-                                        <div key={idx} className="group relative aspect-square bg-slate-100 rounded-2xl overflow-hidden shadow-sm border-2 border-transparent hover:border-sky-500 transition-all">
-                                            <img src={`https://picsum.photos/seed/${t}/400/400`} alt={t} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent flex flex-col justify-end p-4">
-                                                <h4 className="text-white font-bold text-sm leading-tight">{t}</h4>
-                                                <p className="text-sky-300 text-[10px] font-bold mt-1 uppercase tracking-wider">MAPA MENTAL</p>
-                                            </div>
+                                <div>
+                                    {isAdmin && (
+                                        <div className="mb-4">
+                                            <button onClick={() => openMaterialModal('mapa')} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                                <i className="fas fa-plus"></i> Novo Mapa Mental (Link)
+                                            </button>
                                         </div>
-                                    ))}
+                                    )}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                        {materials.filter(m => m.category === 'mapa').map(m => (
+                                            <div key={m.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-sky-500 transition-all relative flex flex-col justify-between group">
+                                                {isAdmin && (
+                                                    <button onClick={() => handleDeleteMaterial(m.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
+                                                        <i className="fas fa-trash"></i>
+                                                    </button>
+                                                )}
+
+                                                <div className="mb-4">
+                                                    <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center mb-4">
+                                                        <i className="fas fa-project-diagram text-sky-600 text-xl"></i>
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
+                                                    <p className="text-slate-400 text-xs mt-1">Mapa Mental / Link</p>
+                                                </div>
+
+                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-colors">
+                                                    <i className="fas fa-external-link-alt mr-1"></i> Acessar
+                                                </a>
+                                            </div>
+                                        ))}
+                                        {materials.filter(m => m.category === 'mapa').length === 0 && <p className="text-slate-400 text-sm">Nenhum mapa mental cadastrado ainda.</p>}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -136,3 +445,4 @@ const Materias: React.FC = () => {
 };
 
 export default Materias;
+
