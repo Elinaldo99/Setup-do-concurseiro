@@ -3,11 +3,60 @@ import { Subject, Exam, Tip } from './types';
 
 export const SUBJECTS: Subject[] = [
   {
-    id: 'port',
-    name: 'Língua Portuguesa',
-    icon: 'fa-book-open',
-    description: 'Gramática, interpretação de texto e redação oficial.',
-    topics: ['Sintaxe', 'Morfologia', 'Pontuação', 'Acentuação', 'Concordância']
+    id: 'adm-geral',
+    name: 'Administração Geral',
+    icon: 'fa-sitemap',
+    description: 'Princípios da administração, gestão de pessoas e materiais.',
+    topics: []
+  },
+  {
+    id: 'adm-publica',
+    name: 'Administração Pública',
+    icon: 'fa-building-columns',
+    description: 'Gestão pública, governança e políticas públicas.',
+    topics: []
+  },
+  {
+    id: 'arquivologia',
+    name: 'Arquivologia',
+    icon: 'fa-box-archive',
+    description: 'Gestão de documentos e arquivos.',
+    topics: []
+  },
+  {
+    id: 'bancarios',
+    name: 'Conhecimentos Bancários',
+    icon: 'fa-money-check-dollar',
+    description: 'Sistema financeiro nacional e produtos bancários.',
+    topics: []
+  },
+  {
+    id: 'contabilidade',
+    name: 'Contabilidade',
+    icon: 'fa-calculator',
+    description: 'Contabilidade geral e pública.',
+    topics: []
+  },
+  {
+    id: 'ctb',
+    name: 'CTB - Legislação de Trânsito',
+    icon: 'fa-car',
+    description: 'Código de Trânsito Brasileiro e resoluções do CONTRAN.',
+    topics: []
+  },
+  {
+    id: 'dir-adm',
+    name: 'Direito Administrativo',
+    icon: 'fa-landmark',
+    description: 'Atos administrativos, licitações e regime jurídico único.',
+    topics: ['Atos Administrativos', 'Licitações 14.133', 'Poderes Administrativos', 'Agentes Públicos']
+  },
+  {
+    id: 'dir-civil',
+    name: 'Direito Civil',
+    icon: 'fa-scale-balanced',
+    description: 'Pessoas, bens e fatos jurídicos.',
+    topics: []
   },
   {
     id: 'dir-const',
@@ -17,11 +66,74 @@ export const SUBJECTS: Subject[] = [
     topics: ['Direitos Fundamentais', 'Organização do Estado', 'Poder Executivo', 'Poder Legislativo']
   },
   {
-    id: 'rlm',
-    name: 'Raciocínio Lógico',
-    icon: 'fa-brain',
-    description: 'Lógica sentencial, matemática básica e sequências.',
-    topics: ['Proposições', 'Tabelas Verdade', 'Conjuntos', 'Probabilidade']
+    id: 'dir-militar',
+    name: 'Direito Militar',
+    icon: 'fa-person-military-rifle',
+    description: 'Código Penal Militar e Processo Penal Militar.',
+    topics: []
+  },
+  {
+    id: 'dir-penal',
+    name: 'Direito Penal',
+    icon: 'fa-handcuffs',
+    description: 'Crimes, penas e teoria do delito.',
+    topics: []
+  },
+  {
+    id: 'dir-prev',
+    name: 'Direito Previdenciário',
+    icon: 'fa-piggy-bank',
+    description: 'Seguridade social, RGPS e benefícios.',
+    topics: []
+  },
+  {
+    id: 'dir-proc-civil',
+    name: 'Direito Processual Civil',
+    icon: 'fa-book-bookmark',
+    description: 'Processo civil, recursos e execução.',
+    topics: []
+  },
+  {
+    id: 'dir-proc-penal',
+    name: 'Direito Processual Penal',
+    icon: 'fa-magnifying-glass',
+    description: 'Inquérito, ação penal e provas.',
+    topics: []
+  },
+  {
+    id: 'dir-humanos',
+    name: 'Direitos Humanos',
+    icon: 'fa-hands-holding-child',
+    description: 'Declaração Universal e tratados internacionais.',
+    topics: []
+  },
+  {
+    id: 'eca',
+    name: 'ECA - Estatuto da Criança e Adolescente',
+    icon: 'fa-child-reaching',
+    description: 'Lei 8.069/90 e proteção integral.',
+    topics: []
+  },
+  {
+    id: 'economia',
+    name: 'Economia',
+    icon: 'fa-chart-line',
+    description: 'Microeconomia, macroeconomia e finanças públicas.',
+    topics: []
+  },
+  {
+    id: 'enfermagem',
+    name: 'Enfermagem',
+    icon: 'fa-user-nurse',
+    description: 'Fundamentos de enfermagem e saúde pública.',
+    topics: []
+  },
+  {
+    id: 'estatistica',
+    name: 'Estatística',
+    icon: 'fa-chart-simple',
+    description: 'Estatística descritiva e inferencial.',
+    topics: []
   },
   {
     id: 'info',
@@ -31,11 +143,46 @@ export const SUBJECTS: Subject[] = [
     topics: ['Windows/Linux', 'Navegadores', 'Segurança', 'Pacote Office']
   },
   {
-    id: 'dir-adm',
-    name: 'Direito Administrativo',
-    icon: 'fa-landmark',
-    description: 'Atos administrativos, licitações e regime jurídico único.',
-    topics: ['Atos Administrativos', 'Licitações 14.133', 'Poderes Administrativos', 'Agentes Públicos']
+    id: 'ingles',
+    name: 'Inglês',
+    icon: 'fa-language',
+    description: 'Compreensão de textos e gramática inglesa.',
+    topics: []
+  },
+  {
+    id: 'matematica',
+    name: 'Matemática',
+    icon: 'fa-calculator',
+    description: 'Aritmética, geometria e funções.',
+    topics: []
+  },
+  {
+    id: 'pedagogia',
+    name: 'Pedagogia',
+    icon: 'fa-school',
+    description: 'Legislação educacional e teorias pedagógicas.',
+    topics: []
+  },
+  {
+    id: 'port',
+    name: 'Português',
+    icon: 'fa-book-open',
+    description: 'Gramática, interpretação de texto e redação oficial.',
+    topics: ['Sintaxe', 'Morfologia', 'Pontuação', 'Acentuação', 'Concordância']
+  },
+  {
+    id: 'rlm',
+    name: 'Raciocínio Lógico',
+    icon: 'fa-brain',
+    description: 'Lógica sentencial, matemática básica e sequências.',
+    topics: ['Proposições', 'Tabelas Verdade', 'Conjuntos', 'Probabilidade']
+  },
+  {
+    id: 'sus',
+    name: 'SUS - Sistema Único de Saúde',
+    icon: 'fa-hospital-user',
+    description: 'História, princípios e legislação do SUS.',
+    topics: []
   }
 ];
 
