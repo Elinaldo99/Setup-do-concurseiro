@@ -32,6 +32,8 @@ const Dicas: React.FC = () => {
     // Modals
     const [showTipModal, setShowTipModal] = useState(false);
     const [showFileModal, setShowFileModal] = useState(false);
+    const [showReadModal, setShowReadModal] = useState(false);
+    const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
 
     // Forms
     const [newTip, setNewTip] = useState({
@@ -203,6 +205,11 @@ const Dicas: React.FC = () => {
         }
     };
 
+    const handleReadTip = (tip: Tip) => {
+        setSelectedTip(tip);
+        setShowReadModal(true);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -322,6 +329,27 @@ const Dicas: React.FC = () => {
                 </div>
             </Modal>
 
+            {/* Read Tip Modal */}
+            <Modal isOpen={showReadModal} onClose={() => { setShowReadModal(false); setSelectedTip(null); }} title={selectedTip?.title || 'Dica'}>
+                {selectedTip && (
+                    <div className="space-y-4">
+                        <div className="bg-sky-50 px-4 py-2 rounded-lg inline-block">
+                            <span className="text-xs font-extrabold text-sky-600 uppercase tracking-widest">{selectedTip.category}</span>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-3">{selectedTip.summary}</h3>
+                            {selectedTip.content ? (
+                                <div className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                    {selectedTip.content}
+                                </div>
+                            ) : (
+                                <p className="text-slate-400 italic">Conteúdo completo não disponível.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             {message && (
                 <div className={`mb-4 p-4 rounded-xl font-bold ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
                     {message.text}
@@ -377,7 +405,10 @@ const Dicas: React.FC = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         {tip.content && (
-                                            <button className="flex-1 py-3 bg-sky-50 text-sky-600 rounded-xl font-bold text-sm hover:bg-sky-100 transition-colors flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => handleReadTip(tip)}
+                                                className="flex-1 py-3 bg-sky-50 text-sky-600 rounded-xl font-bold text-sm hover:bg-sky-100 transition-colors flex items-center justify-center gap-2"
+                                            >
                                                 <i className="fas fa-book-open"></i> Ler
                                             </button>
                                         )}
