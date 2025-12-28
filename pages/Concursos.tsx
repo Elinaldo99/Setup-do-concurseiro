@@ -24,12 +24,21 @@ const Concursos: React.FC = () => {
 
     // Admin State
     const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [isEditExamModalOpen, setIsEditExamModalOpen] = useState(false);
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [selectedExamForDoc, setSelectedExamForDoc] = useState<string | null>(null);
+    const [editingExam, setEditingExam] = useState<Exam | null>(null);
     const [newExam, setNewExam] = useState<Partial<Exam>>({
         institution: '',
         role: '',
         year: new Date().getFullYear(),
         level: 'Médio',
         status: 'Aberto'
+    });
+    const [newDoc, setNewDoc] = useState({
+        name: '',
+        type: 'PDF',
+        link: ''
     });
     const [uploading, setUploading] = useState(false);
 
@@ -91,41 +100,79 @@ const Concursos: React.FC = () => {
         }
     };
 
-    const handleFileUpload = async (examId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        const file = e.target.files[0];
-        setUploading(true);
+    const openEditExamModal = (exam: Exam, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingExam(exam);
+        setIsEditExamModalOpen(true);
+    };
 
+    const handleUpdateExam = async () => {
+        if (!editingExam) return;
+
+        const { error } = await supabase
+            .from('exams')
+            .update({
+                institution: editingExam.institution,
+                role: editingExam.role,
+                year: editingExam.year,
+                level: editingExam.level,
+                status: editingExam.status
+            })
+            .eq('id', editingExam.id);
+
+        if (error) {
+            alert('Erro ao atualizar concurso');
+        } else {
+            setIsEditExamModalOpen(false);
+            setEditingExam(null);
+            fetchExams();
+        }
+    };
+
+    const openDocModal = (examId: string) => {
+        setSelectedExamForDoc(examId);
+        setIsDocModalOpen(true);
+    };
+
+    const handleAddDocument = async () => {
+        if (!newDoc.name || !newDoc.link || !selectedExamForDoc) {
+            alert('Preencha todos os campos');
+            return;
+        }
+
+        // Validate URL
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${examId}/${fileName}`;
+            new URL(newDoc.link);
+        } catch {
+            alert('Link inválido. Use um URL completo (ex: https://...)');
+            return;
+        }
 
-            const { error: uploadError } = await supabase.storage.from('exams').upload(filePath, file);
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage.from('exams').getPublicUrl(filePath);
-
-            const { error: dbError } = await supabase.from('exam_documents').insert({
-                exam_id: examId,
-                name: file.name,
-                type: fileExt?.toUpperCase() || 'FILE',
-                url: publicUrl
+        setUploading(true);
+        try {
+            const { error } = await supabase.from('exam_documents').insert({
+                exam_id: selectedExamForDoc,
+                name: newDoc.name,
+                type: newDoc.type,
+                url: newDoc.link
             });
 
-            if (dbError) throw dbError;
+            if (error) throw error;
 
+            setIsDocModalOpen(false);
+            setNewDoc({ name: '', type: 'PDF', link: '' });
+            setSelectedExamForDoc(null);
             fetchDocuments();
         } catch (error) {
             console.error(error);
-            alert('Erro ao enviar arquivo');
+            alert('Erro ao adicionar documento');
         } finally {
             setUploading(false);
         }
     };
 
-    const handleDeleteDocument = async (docId: string, path: string | undefined) => {
-        if (!confirm('Excluir arquivo?')) return;
+    const handleDeleteDocument = async (docId: string) => {
+        if (!confirm('Excluir documento?')) return;
         await supabase.from('exam_documents').delete().eq('id', docId);
         fetchDocuments();
     };
@@ -145,6 +192,7 @@ const Concursos: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
+            {/* Exam Modal */}
             <Modal isOpen={isExamModalOpen} onClose={() => setIsExamModalOpen(false)} title="Novo Concurso">
                 <div className="space-y-4">
                     <input type="text" placeholder="Instituição (ex: INSS)" className="w-full p-2 border rounded" value={newExam.institution} onChange={e => setNewExam({ ...newExam, institution: e.target.value })} />
@@ -163,6 +211,122 @@ const Concursos: React.FC = () => {
                         <option value="Previsto">Previsto</option>
                     </select>
                     <button onClick={handleAddExam} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar</button>
+                </div>
+            </Modal>
+
+            {/* Edit Exam Modal */}
+            <Modal isOpen={isEditExamModalOpen} onClose={() => { setIsEditExamModalOpen(false); setEditingExam(null); }} title="Editar Concurso">
+                {editingExam && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Instituição</label>
+                            <input
+                                type="text"
+                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                                value={editingExam.institution}
+                                onChange={e => setEditingExam({ ...editingExam, institution: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Cargo</label>
+                            <input
+                                type="text"
+                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                                value={editingExam.role}
+                                onChange={e => setEditingExam({ ...editingExam, role: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Ano</label>
+                                <input
+                                    type="number"
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                                    value={editingExam.year}
+                                    onChange={e => setEditingExam({ ...editingExam, year: parseInt(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Nível</label>
+                                <select
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                                    value={editingExam.level}
+                                    onChange={e => setEditingExam({ ...editingExam, level: e.target.value as any })}
+                                >
+                                    <option value="Fundamental">Fundamental</option>
+                                    <option value="Médio">Médio</option>
+                                    <option value="Superior">Superior</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
+                            <select
+                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                                value={editingExam.status}
+                                onChange={e => setEditingExam({ ...editingExam, status: e.target.value as any })}
+                            >
+                                <option value="Aberto">Aberto</option>
+                                <option value="Finalizado">Finalizado</option>
+                                <option value="Previsto">Previsto</option>
+                            </select>
+                        </div>
+                        <button
+                            onClick={handleUpdateExam}
+                            className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700"
+                        >
+                            Salvar Alterações
+                        </button>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Document Link Modal */}
+            <Modal isOpen={isDocModalOpen} onClose={() => { setIsDocModalOpen(false); setSelectedExamForDoc(null); }} title="Adicionar Documento">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Nome do Documento *</label>
+                        <input
+                            type="text"
+                            value={newDoc.name}
+                            onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="Ex: Prova Completa, Gabarito, Edital"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Tipo</label>
+                        <select
+                            value={newDoc.type}
+                            onChange={(e) => setNewDoc({ ...newDoc, type: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                        >
+                            <option value="PDF">PDF</option>
+                            <option value="DOCX">DOCX</option>
+                            <option value="XLSX">XLSX</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Link do Documento *</label>
+                        <input
+                            type="url"
+                            value={newDoc.link}
+                            onChange={(e) => setNewDoc({ ...newDoc, link: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="https://drive.google.com/... ou outro link"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            Cole o link direto para download (Google Drive, Dropbox, etc.)
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleAddDocument}
+                        disabled={uploading}
+                        className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700 disabled:opacity-50"
+                    >
+                        {uploading ? <i className="fas fa-circle-notch animate-spin"></i> : 'Adicionar Documento'}
+                    </button>
                 </div>
             </Modal>
 
@@ -197,7 +361,7 @@ const Concursos: React.FC = () => {
                                                     {documents.filter(d => d.exam_id === ex.id).map(doc => (
                                                         <div key={doc.id} className="p-6 border-2 border-slate-50 rounded-2xl hover:border-sky-200 transition-all group flex flex-col justify-between bg-slate-50/50 relative">
                                                             {isAdmin && (
-                                                                <button onClick={() => handleDeleteDocument(doc.id, doc.url)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
+                                                                <button onClick={() => handleDeleteDocument(doc.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
                                                                     <i className="fas fa-trash"></i>
                                                                 </button>
                                                             )}
@@ -212,24 +376,15 @@ const Concursos: React.FC = () => {
                                                         </div>
                                                     ))}
 
-                                                    {/* Upload Area for Admin */}
+                                                    {/* Add Document Button for Admin */}
                                                     {isAdmin && (
-                                                        <div className="p-6 border-2 border-dashed border-sky-200 rounded-2xl flex flex-col items-center justify-center text-sky-500 hover:bg-sky-50 transition cursor-pointer relative min-h-[200px]">
-                                                            <input
-                                                                type="file"
-                                                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                                                                onChange={(e) => handleFileUpload(ex.id, e)}
-                                                                disabled={uploading}
-                                                            />
-                                                            {uploading ? (
-                                                                <i className="fas fa-circle-notch animate-spin text-3xl"></i>
-                                                            ) : (
-                                                                <>
-                                                                    <i className="fas fa-cloud-upload-alt text-3xl mb-2"></i>
-                                                                    <span className="font-bold text-sm text-center">Adicionar Arquivo para<br />{ex.role}</span>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <button
+                                                            onClick={() => openDocModal(ex.id)}
+                                                            className="p-6 border-2 border-dashed border-sky-200 rounded-2xl flex flex-col items-center justify-center text-sky-500 hover:bg-sky-50 transition cursor-pointer min-h-[200px]"
+                                                        >
+                                                            <i className="fas fa-link text-3xl mb-2"></i>
+                                                            <span className="font-bold text-sm text-center">Adicionar Link para<br />{ex.role}</span>
+                                                        </button>
                                                     )}
                                                 </div>
                                             ))}
@@ -310,9 +465,14 @@ const Concursos: React.FC = () => {
                                         <tr key={exam.id} className="border-b hover:bg-sky-50/30 transition-colors group">
                                             <td className="px-6 py-4 relative flex items-center gap-3">
                                                 {isAdmin && (
-                                                    <button onClick={(e) => handleDeleteExam(exam.id, e)} className="text-slate-300 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center">
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
+                                                    <>
+                                                        <button onClick={(e) => openEditExamModal(exam, e)} className="text-slate-300 hover:text-sky-500 transition-colors w-8 h-8 rounded-full hover:bg-sky-50 flex items-center justify-center">
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onClick={(e) => handleDeleteExam(exam.id, e)} className="text-slate-300 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </>
                                                 )}
                                                 <button
                                                     onClick={() => setSelectedExam(exam)}
