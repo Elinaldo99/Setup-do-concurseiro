@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TabButton from '../components/TabButton';
 import { Subject } from '../types';
-import { getStudySummary } from '../services/geminiService';
 import { supabase } from '../lib/supabaseClient';
 import { useAdmin } from '../hooks/useAdmin';
 import Modal from '../components/Modal';
@@ -33,8 +32,6 @@ const Materias: React.FC = () => {
     const [topics, setTopics] = useState<SubjectTopic[]>([]);
     const [materials, setMaterials] = useState<SubjectMaterial[]>([]);
     const [selectedTopic, setSelectedTopic] = useState<SubjectTopic | null>(null);
-    const [summary, setSummary] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
 
     // Admin Modal State
     const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -121,15 +118,6 @@ const Materias: React.FC = () => {
         } else {
             alert('Erro ao adicionar link');
         }
-    };
-
-    const handleSummary = async (topicName: string) => {
-        setLoading(true);
-        setSummary(null);
-        // Temporary logic for summary, ideally should fetch based on topic content
-        const result = await getStudySummary(selectedSubject?.name || '', topicName);
-        setSummary(result);
-        setLoading(false);
     };
 
     // Kept for "Apostilas" file upload if needed, or remove if "Apostilas" also moves to links entirely. 
@@ -308,16 +296,11 @@ const Materias: React.FC = () => {
                                                             {selectedTopic.content}
                                                         </div>
                                                     )}
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        <button onClick={() => handleSummary(selectedTopic.title)} className="text-sky-600 text-sm font-bold hover:underline">
-                                                            <i className="fas fa-magic mr-1"></i> Gerar Resumo IA
-                                                        </button>
-                                                        {selectedTopic.external_link && (
-                                                            <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200">
-                                                                <i className="fas fa-external-link-alt mr-1"></i> Acessar Link
-                                                            </a>
-                                                        )}
-                                                    </div>
+                                                    {selectedTopic.external_link && (
+                                                        <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200 inline-block">
+                                                            <i className="fas fa-external-link-alt mr-1"></i> Acessar Link
+                                                        </a>
+                                                    )}
                                                 </div>
 
                                                 {/* Files for this Topic */}
@@ -347,13 +330,6 @@ const Materias: React.FC = () => {
                                                         {materials.filter(m => m.topic_id === selectedTopic.id).length === 0 && <p className="text-xs text-slate-400">Nenhum arquivo.</p>}
                                                     </div>
                                                 </div>
-
-                                                {summary && (
-                                                    <div className="p-6 bg-sky-50 rounded-xl border border-sky-100">
-                                                        <h4 className="font-bold text-sky-800 mb-2">Resumo IA</h4>
-                                                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{summary}</p>
-                                                    </div>
-                                                )}
                                             </div>
                                         ) : (
                                             <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-100 rounded-xl p-8">

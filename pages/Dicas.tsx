@@ -1,20 +1,8 @@
 import React, { useState } from 'react';
 import { TIPS } from '../constants';
-import { getAITip } from '../services/geminiService';
 
 const Dicas: React.FC = () => {
-    const [goal, setGoal] = useState('');
-    const [aiTip, setAiTip] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState<string | null>(null);
-
-    const handleAskAI = async () => {
-        if (!goal.trim()) return;
-        setLoading(true);
-        const tip = await getAITip(goal);
-        setAiTip(tip);
-        setLoading(false);
-    };
 
     const simulateDownload = (name: string) => {
         setDownloading(name);
@@ -29,40 +17,6 @@ const Dicas: React.FC = () => {
             <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
                 <i className="fas fa-magic text-sky-600"></i> Dicas Estratégicas
             </h2>
-
-            <div className="bg-gradient-to-br from-sky-600 to-sky-700 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden mb-12">
-                <div className="relative z-10">
-                    <h3 className="text-2xl font-bold mb-4">Guru Concurseiro IA</h3>
-                    <p className="opacity-90 mb-6 max-w-xl">Qual o obstáculo no seu caminho hoje? Peça uma orientação estratégica para sua jornada.</p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <input
-                            type="text"
-                            placeholder="Ex: Não consigo manter constância..."
-                            value={goal}
-                            onChange={(e) => setGoal(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleAskAI()}
-                            className="flex-1 px-6 py-4 rounded-2xl text-slate-800 outline-none shadow-inner"
-                        />
-                        <button onClick={handleAskAI} disabled={loading} className="bg-white text-sky-700 px-8 py-4 rounded-2xl font-bold hover:bg-sky-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                            {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-brain"></i> Gerar Dica</>}
-                        </button>
-                    </div>
-                    {aiTip && (
-                        <div className="mt-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 animate-fade-in group">
-                            <div className="flex justify-between items-start gap-4">
-                                <p className="italic font-medium leading-relaxed">"{aiTip}"</p>
-                                <button
-                                    onClick={() => simulateDownload("Dica Personalizada IA")}
-                                    className="bg-white/20 hover:bg-white/40 p-3 rounded-xl transition-all flex items-center gap-2 text-xs font-bold whitespace-nowrap"
-                                >
-                                    <i className="fas fa-file-pdf"></i> Baixar PDF
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <i className="fas fa-robot absolute right-[-20px] bottom-[-20px] text-[200px] text-white/5 pointer-events-none"></i>
-            </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
