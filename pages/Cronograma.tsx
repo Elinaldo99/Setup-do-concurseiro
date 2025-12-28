@@ -1,19 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { StudyBlock } from '../types';
-import { SUBJECTS, EXAMS, DAYS_OF_WEEK } from '../constants';
+import { SUBJECTS, DAYS_OF_WEEK } from '../constants';
+import { supabase } from '../lib/supabaseClient';
+import { useAdmin } from '../hooks/useAdmin';
+import Modal from '../components/Modal';
+
+interface ReadySchedule {
+    id: string;
+    institution: string;
+    role: string;
+    file_url: string;
+    created_at: string;
+}
 
 const Cronograma: React.FC = () => {
+    const { isAdmin } = useAdmin();
     const [blocks, setBlocks] = useState<StudyBlock[]>([]);
+    const [readySchedules, setReadySchedules] = useState<ReadySchedule[]>([]);
     const [newSubject, setNewSubject] = useState(SUBJECTS[0].id);
     const [newDay, setNewDay] = useState(DAYS_OF_WEEK[0]);
     const [newStart, setNewStart] = useState('08:00');
     const [newEnd, setNewEnd] = useState('10:00');
     const [downloading, setDownloading] = useState<string | null>(null);
 
+    // Modal states
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [newSchedule, setNewSchedule] = useState({
+        institution: '',
+        role: '',
+        link: ''
+    });
+    const [uploading, setUploading] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
     useEffect(() => {
         const saved = localStorage.getItem('study_schedule');
         if (saved) setBlocks(JSON.parse(saved));
+        fetchReadySchedules();
     }, []);
+
+    const fetchReadySchedules = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('ready_schedules')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setReadySchedules(data || []);
+        } catch (error) {
+            console.error('Error fetching ready schedules:', error);
+        }
+    };
 
     const addBlock = () => {
         const block: StudyBlock = {
@@ -34,18 +72,130 @@ const Cronograma: React.FC = () => {
         localStorage.setItem('study_schedule', JSON.stringify(updated));
     };
 
-    const simulateDownload = (examName: string) => {
-        setDownloading(examName);
-        setTimeout(() => {
-            setDownloading(null);
-            alert(`Download concluído: Cronograma Estratégico para ${examName}.pdf`);
-        }, 1500);
+    const handleAddSchedule = async () => {
+        if (!newSchedule.institution || !newSchedule.role || !newSchedule.link) {
+            setMessage({ type: 'error', text: 'Preencha todos os campos' });
+            return;
+        }
+
+        // Validate URL
+        try {
+            new URL(newSchedule.link);
+        } catch {
+            setMessage({ type: 'error', text: 'Link inválido. Use um URL completo (ex: https://...)' });
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const { error } = await supabase
+                .from('ready_schedules')
+                .insert([{
+                    institution: newSchedule.institution,
+                    role: newSchedule.role,
+                    file_url: newSchedule.link
+                }]);
+
+            if (error) throw error;
+
+            setShowScheduleModal(false);
+            setNewSchedule({ institution: '', role: '', link: '' });
+            setMessage({ type: 'success', text: 'Cronograma adicionado com sucesso!' });
+            fetchReadySchedules();
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Erro ao adicionar cronograma' });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDeleteSchedule = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir este cronograma?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('ready_schedules')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setMessage({ type: 'success', text: 'Cronograma removido!' });
+            fetchReadySchedules();
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Erro ao remover cronograma' });
+        }
+    };
+
+    const handleDownload = (url: string, name: string) => {
+        setDownloading(name);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => setDownloading(null), 1000);
     };
 
     const getSubjectName = (id: string) => SUBJECTS.find(s => s.id === id)?.name || id;
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
+            {/* Add Schedule Modal */}
+            <Modal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} title="Novo Cronograma Pronto">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Instituição *</label>
+                        <input
+                            type="text"
+                            value={newSchedule.institution}
+                            onChange={(e) => setNewSchedule({ ...newSchedule, institution: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="Ex: INSS, Banco do Brasil"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Cargo *</label>
+                        <input
+                            type="text"
+                            value={newSchedule.role}
+                            onChange={(e) => setNewSchedule({ ...newSchedule, role: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="Ex: Técnico do Seguro Social"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Link do Cronograma *</label>
+                        <input
+                            type="url"
+                            value={newSchedule.link}
+                            onChange={(e) => setNewSchedule({ ...newSchedule, link: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="https://drive.google.com/... ou outro link"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            Cole o link direto para download (Google Drive, Dropbox, etc.)
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleAddSchedule}
+                        disabled={uploading}
+                        className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700 disabled:opacity-50"
+                    >
+                        {uploading ? <i className="fas fa-circle-notch animate-spin"></i> : 'Adicionar Cronograma'}
+                    </button>
+                </div>
+            </Modal>
+
+            {message && (
+                <div className={`mb-4 p-4 rounded-xl font-bold ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                    {message.text}
+                </div>
+            )}
+
             <div className="mb-8">
                 <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
                     <i className="fas fa-calendar-alt text-sky-600"></i> Gestão de Cronogramas
@@ -89,36 +239,62 @@ const Cronograma: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* New Section: Downloadable ready-made schedules */}
+                    {/* Ready Schedules Section */}
                     <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 space-y-4">
-                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                            <i className="fas fa-file-pdf text-red-500"></i> Cronogramas Prontos
-                        </h3>
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                <i className="fas fa-file-pdf text-red-500"></i> Cronogramas Prontos
+                            </h3>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setShowScheduleModal(true)}
+                                    className="text-sky-600 hover:text-sky-700"
+                                >
+                                    <i className="fas fa-plus-circle"></i>
+                                </button>
+                            )}
+                        </div>
                         <p className="text-xs text-slate-500 mb-4">Modelos otimizados para editais específicos.</p>
                         <div className="space-y-3">
-                            {EXAMS.map(exam => (
-                                <button
-                                    key={exam.id}
-                                    onClick={() => simulateDownload(exam.institution)}
-                                    disabled={!!downloading}
-                                    className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-sky-50 rounded-xl border border-transparent hover:border-sky-100 transition-all group"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-sm">
-                                            <i className="fas fa-scroll text-sm"></i>
+                            {readySchedules.length === 0 ? (
+                                <div className="text-center py-8 text-slate-400">
+                                    <i className="fas fa-calendar text-3xl mb-2 opacity-10"></i>
+                                    <p className="text-xs">Nenhum cronograma disponível.</p>
+                                </div>
+                            ) : (
+                                readySchedules.map(schedule => (
+                                    <div
+                                        key={schedule.id}
+                                        className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-sky-50 rounded-xl border border-transparent hover:border-sky-100 transition-all group relative"
+                                    >
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleDeleteSchedule(schedule.id)}
+                                                className="absolute top-1 right-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            >
+                                                <i className="fas fa-trash text-xs"></i>
+                                            </button>
+                                        )}
+                                        <div
+                                            onClick={() => handleDownload(schedule.file_url, `${schedule.institution} - ${schedule.role}`)}
+                                            className="flex items-center gap-3 flex-1 cursor-pointer"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-sm">
+                                                <i className="fas fa-scroll text-sm"></i>
+                                            </div>
+                                            <div className="text-left overflow-hidden flex-1">
+                                                <span className="text-[11px] font-bold text-slate-800 block leading-tight truncate">{schedule.institution}</span>
+                                                <span className="text-[9px] text-slate-400 uppercase font-bold truncate">{schedule.role}</span>
+                                            </div>
                                         </div>
-                                        <div className="text-left overflow-hidden">
-                                            <span className="text-[11px] font-bold text-slate-800 block leading-tight truncate">{exam.institution}</span>
-                                            <span className="text-[9px] text-slate-400 uppercase font-bold truncate">{exam.role}</span>
-                                        </div>
+                                        {downloading === `${schedule.institution} - ${schedule.role}` ? (
+                                            <i className="fas fa-spinner animate-spin text-sky-600"></i>
+                                        ) : (
+                                            <i className="fas fa-download text-slate-300 group-hover:text-sky-600 transition-colors"></i>
+                                        )}
                                     </div>
-                                    {downloading === exam.institution ? (
-                                        <i className="fas fa-spinner animate-spin text-sky-600"></i>
-                                    ) : (
-                                        <i className="fas fa-download text-slate-300 group-hover:text-sky-600 transition-colors"></i>
-                                    )}
-                                </button>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
