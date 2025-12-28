@@ -319,7 +319,7 @@ const Materias: React.FC = () => {
                                                     )}
                                                     {selectedTopic.external_link && (
                                                         <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200 inline-block transition-colors">
-                                                            <i className="fas fa-external-link-alt mr-1"></i> Acessar Link
+                                                            <i className="fas fa-external-link-alt mr-1"></i> Baixar Texto
                                                         </a>
                                                     )}
                                                 </div>
@@ -404,12 +404,12 @@ const Materias: React.FC = () => {
 
                                                 <div className="mb-4">
                                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
-                                                            m.type === 'XLS' ? 'bg-emerald-500' :
-                                                                'bg-sky-600'
+                                                        m.type === 'XLS' ? 'bg-emerald-500' :
+                                                            'bg-sky-600'
                                                         }`}>
                                                         <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
-                                                                m.type === 'XLS' ? 'fa-file-excel' :
-                                                                    'fa-tasks'
+                                                            m.type === 'XLS' ? 'fa-file-excel' :
+                                                                'fa-tasks'
                                                             } text-xl`}></i>
                                                     </div>
                                                     <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
@@ -446,12 +446,12 @@ const Materias: React.FC = () => {
 
                                                 <div className="mb-4">
                                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
-                                                            m.type === 'XLS' ? 'bg-emerald-500' :
-                                                                'bg-sky-600'
+                                                        m.type === 'XLS' ? 'bg-emerald-500' :
+                                                            'bg-sky-600'
                                                         }`}>
                                                         <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
-                                                                m.type === 'XLS' ? 'fa-file-excel' :
-                                                                    'fa-project-diagram'
+                                                            m.type === 'XLS' ? 'fa-file-excel' :
+                                                                'fa-project-diagram'
                                                             } text-xl`}></i>
                                                     </div>
                                                     <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
