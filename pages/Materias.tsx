@@ -47,8 +47,8 @@ const Materias: React.FC = () => {
         title: '', content: '', external_link: ''
     });
 
-    const [newMaterial, setNewMaterial] = useState<{ name: string, url: string, category: string }>({
-        name: '', url: '', category: ''
+    const [newMaterial, setNewMaterial] = useState<{ name: string, url: string, category: string, topic_id?: string, type: string }>({
+        name: '', url: '', category: '', topic_id: '', type: 'PDF'
     });
 
     useEffect(() => {
@@ -105,15 +105,16 @@ const Materias: React.FC = () => {
 
         const { error } = await supabase.from('subject_materials').insert({
             subject_id: selectedSubject.id,
+            topic_id: newMaterial.topic_id || null,
             name: newMaterial.name,
             url: newMaterial.url,
-            type: 'LINK',
+            type: newMaterial.type,
             category: newMaterial.category
         });
 
         if (!error) {
             setIsMaterialModalOpen(false);
-            setNewMaterial({ name: '', url: '', category: '' });
+            setNewMaterial({ name: '', url: '', category: '', topic_id: '', type: 'PDF' });
             fetchMaterials(selectedSubject.id);
         } else {
             alert('Erro ao adicionar link');
@@ -170,8 +171,8 @@ const Materias: React.FC = () => {
         fetchSubjects();
     };
 
-    const openMaterialModal = (category: string) => {
-        setNewMaterial({ name: '', url: '', category });
+    const openMaterialModal = (category: string, topicId?: string) => {
+        setNewMaterial({ name: '', url: '', category, topic_id: topicId, type: 'PDF' });
         setIsMaterialModalOpen(true);
     };
 
@@ -198,11 +199,31 @@ const Materias: React.FC = () => {
             </Modal>
 
             {/* Material Link Modal */}
-            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={`Adicionar Link em ${newMaterial.category === 'questao' ? 'Exercícios' : 'Mapas Mentais'}`}>
+            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={`Adicionar Novo em ${newMaterial.category === 'questao' ? 'Exercícios' : newMaterial.category === 'mapa' ? 'Mapas Mentais' : 'Apostilas'}`}>
                 <div className="space-y-4">
-                    <input type="text" placeholder="Nome / Título" className="w-full p-2 border rounded" value={newMaterial.name} onChange={e => setNewMaterial({ ...newMaterial, name: e.target.value })} />
-                    <input type="text" placeholder="URL do Link" className="w-full p-2 border rounded" value={newMaterial.url} onChange={e => setNewMaterial({ ...newMaterial, url: e.target.value })} />
-                    <button onClick={handleAddMaterialLink} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar Link</button>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Título / Nome</label>
+                        <input type="text" placeholder="Ex: Aula 01, Exercícios de Fixação" className="w-full p-2 border rounded" value={newMaterial.name} onChange={e => setNewMaterial({ ...newMaterial, name: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Formato</label>
+                        <select
+                            className="w-full p-2 border rounded bg-white"
+                            value={newMaterial.type}
+                            onChange={(e) => setNewMaterial({ ...newMaterial, type: e.target.value })}
+                        >
+                            <option value="PDF">PDF</option>
+                            <option value="VIDEO">VÍDEO</option>
+                            <option value="XLS">XLS (Excel)</option>
+                            <option value="DOCX">DOCX</option>
+                            <option value="LINK">LINK / SITE</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">URL do Link</label>
+                        <input type="text" placeholder="https://..." className="w-full p-2 border rounded" value={newMaterial.url} onChange={e => setNewMaterial({ ...newMaterial, url: e.target.value })} />
+                    </div>
+                    <button onClick={handleAddMaterialLink} className="w-full bg-sky-600 text-white p-3 rounded font-bold hover:bg-sky-700 transition-colors">Salvar Material</button>
                 </div>
             </Modal>
 
@@ -297,7 +318,7 @@ const Materias: React.FC = () => {
                                                         </div>
                                                     )}
                                                     {selectedTopic.external_link && (
-                                                        <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200 inline-block">
+                                                        <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200 inline-block transition-colors">
                                                             <i className="fas fa-external-link-alt mr-1"></i> Acessar Link
                                                         </a>
                                                     )}
@@ -308,22 +329,44 @@ const Materias: React.FC = () => {
                                                     <div className="flex justify-between items-center mb-2">
                                                         <h4 className="font-bold text-slate-700 text-sm">Arquivos do Assunto</h4>
                                                         {isAdmin && (
-                                                            <label className="text-xs font-bold text-sky-600 cursor-pointer hover:underline">
-                                                                <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, selectedTopic.id)} />
-                                                                + Adicionar Arquivo
-                                                            </label>
+                                                            <button
+                                                                onClick={() => openMaterialModal('apostila', selectedTopic.id)}
+                                                                className="text-xs font-bold text-sky-600 hover:underline"
+                                                            >
+                                                                + Adicionar Link
+                                                            </button>
                                                         )}
                                                     </div>
                                                     <div className="space-y-2">
                                                         {materials.filter(m => m.topic_id === selectedTopic.id).map(m => (
-                                                            <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                                            <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100 group/item">
                                                                 <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <i className={`fas fa-file-pdf text-red-500`}></i>
-                                                                    <span className="text-sm font-medium text-slate-700 truncate">{m.name}</span>
+                                                                    <div className={`w-8 h-8 rounded flex items-center justify-center text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
+                                                                        m.type === 'XLS' ? 'bg-emerald-500' :
+                                                                            'bg-red-500'
+                                                                        }`}>
+                                                                        <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
+                                                                            m.type === 'XLS' ? 'fa-file-excel' :
+                                                                                'fa-file-pdf'
+                                                                            } text-xs`}></i>
+                                                                    </div>
+                                                                    <div className="flex flex-col overflow-hidden">
+                                                                        <span className="text-sm font-bold text-slate-700 truncate">{m.name}</span>
+                                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{m.type}</span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex gap-2">
-                                                                    <a href={m.url} target="_blank" rel="noreferrer" className="text-sky-500 hover:text-sky-700"><i className="fas fa-download"></i></a>
-                                                                    {isAdmin && <button onClick={() => handleDeleteMaterial(m.id)} className="text-red-400 hover:text-red-600"><i className="fas fa-trash"></i></button>}
+                                                                    <a href={m.url} target="_blank" rel="noreferrer" className="text-sky-600 hover:text-sky-700 text-xs font-bold flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-sky-100 shadow-sm transition-all hover:shadow">
+                                                                        <i className="fas fa-external-link-alt text-[10px]"></i> Acessar
+                                                                    </a>
+                                                                    {isAdmin && (
+                                                                        <button
+                                                                            onClick={() => handleDeleteMaterial(m.id)}
+                                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1.5 opacity-0 group-hover/item:opacity-100"
+                                                                        >
+                                                                            <i className="fas fa-trash"></i>
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -360,14 +403,20 @@ const Materias: React.FC = () => {
                                                 )}
 
                                                 <div className="mb-4">
-                                                    <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center mb-4">
-                                                        <i className="fas fa-tasks text-sky-600 text-xl"></i>
+                                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
+                                                            m.type === 'XLS' ? 'bg-emerald-500' :
+                                                                'bg-sky-600'
+                                                        }`}>
+                                                        <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
+                                                                m.type === 'XLS' ? 'fa-file-excel' :
+                                                                    'fa-tasks'
+                                                            } text-xl`}></i>
                                                     </div>
                                                     <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
-                                                    <p className="text-slate-400 text-xs mt-1">Exercício / Link</p>
+                                                    <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-wider">{m.type}</p>
                                                 </div>
 
-                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-colors">
+                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100">
                                                     <i className="fas fa-external-link-alt mr-1"></i> Acessar
                                                 </a>
                                             </div>
@@ -396,14 +445,20 @@ const Materias: React.FC = () => {
                                                 )}
 
                                                 <div className="mb-4">
-                                                    <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center mb-4">
-                                                        <i className="fas fa-project-diagram text-sky-600 text-xl"></i>
+                                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
+                                                            m.type === 'XLS' ? 'bg-emerald-500' :
+                                                                'bg-sky-600'
+                                                        }`}>
+                                                        <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
+                                                                m.type === 'XLS' ? 'fa-file-excel' :
+                                                                    'fa-project-diagram'
+                                                            } text-xl`}></i>
                                                     </div>
                                                     <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
-                                                    <p className="text-slate-400 text-xs mt-1">Mapa Mental / Link</p>
+                                                    <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-wider">{m.type}</p>
                                                 </div>
 
-                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-colors">
+                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100">
                                                     <i className="fas fa-external-link-alt mr-1"></i> Acessar
                                                 </a>
                                             </div>
