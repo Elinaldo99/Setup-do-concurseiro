@@ -6,6 +6,7 @@ const Auth: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
     const navigate = useNavigate();
@@ -20,6 +21,11 @@ const Auth: React.FC = () => {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: name,
+                        }
+                    }
                 });
                 if (error) throw error;
                 setMessage({ type: 'success', text: 'Verifique seu email para confirmar o cadastro!' });
@@ -55,6 +61,23 @@ const Auth: React.FC = () => {
                     </div>
 
                     <form onSubmit={handleAuth} className="space-y-6">
+                        {isSignUp && (
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Nome Completo</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 outline-none transition-all"
+                                        placeholder="Seu nome completo"
+                                    />
+                                    <i className="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                </div>
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-sm font-bold text-slate-700 mb-2">Email</label>
                             <div className="relative">

@@ -1,7 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 import { Goal, Achievement } from '../types';
+import Modal from '../components/Modal';
+
+interface Profile {
+    id: string;
+    full_name: string;
+    bio: string;
+    avatar_url: string | null;
+}
 
 const Perfil: React.FC = () => {
+    const navigate = useNavigate();
+    const [user, setUser] = useState<any>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+    // Form states
+    const [editForm, setEditForm] = useState({ full_name: '', bio: '' });
+    const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Goals and achievements (existing functionality)
     const [goals, setGoals] = useState<Goal[]>([]);
     const [newGoalText, setNewGoalText] = useState('');
     const [scheduleCount, setScheduleCount] = useState(0);
@@ -13,6 +37,56 @@ const Perfil: React.FC = () => {
     ]);
 
     useEffect(() => {
+        fetchUserProfile();
+        loadGoalsAndSchedule();
+    }, []);
+
+    const fetchUserProfile = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                navigate('/auth');
+                return;
+            }
+            setUser(user);
+
+            // Fetch or create profile
+            let { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (error && error.code === 'PGRST116') {
+                // Profile doesn't exist, create it
+                const newProfile = {
+                    id: user.id,
+                    full_name: user.user_metadata?.full_name || 'Concurseiro',
+                    bio: 'Em busca da vaga dos sonhos',
+                    avatar_url: null
+                };
+                const { data, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert([newProfile])
+                    .select()
+                    .single();
+
+                if (!insertError) profile = data;
+            }
+
+            setProfile(profile);
+            setEditForm({
+                full_name: profile?.full_name || '',
+                bio: profile?.bio || ''
+            });
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadGoalsAndSchedule = () => {
         const savedGoals = localStorage.getItem('study_goals');
         if (savedGoals) setGoals(JSON.parse(savedGoals));
 
@@ -20,20 +94,102 @@ const Perfil: React.FC = () => {
         if (savedSchedule) {
             const parsed = JSON.parse(savedSchedule);
             setScheduleCount(parsed.length);
-            if (parsed.length > 0) {
-                unlockAchievement('1');
-            }
+            if (parsed.length > 0) unlockAchievement('1');
         }
-    }, []);
+    };
 
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0] || !user) return;
+
+        const file = e.target.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/avatar.${fileExt}`;
+
+        setUploading(true);
+        try {
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, file, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(fileName);
+
+            // Update profile
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', user.id);
+
+            if (updateError) throw updateError;
+
+            setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+            setMessage({ type: 'success', text: 'Foto atualizada com sucesso!' });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Erro ao fazer upload' });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        if (!user) return;
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: editForm.full_name,
+                    bio: editForm.bio
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            setProfile(prev => prev ? { ...prev, ...editForm } : null);
+            setIsEditing(false);
+            setMessage({ type: 'success', text: 'Perfil atualizado!' });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Erro ao salvar' });
+        }
+    };
+
+    const handleChangePassword = async () => {
+        if (passwordForm.new !== passwordForm.confirm) {
+            setMessage({ type: 'error', text: 'As senhas não coincidem' });
+            return;
+        }
+
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: passwordForm.new
+            });
+
+            if (error) throw error;
+
+            setShowPasswordModal(false);
+            setPasswordForm({ current: '', new: '', confirm: '' });
+            setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Erro ao alterar senha' });
+        }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/auth');
+    };
+
+    // Goals functions (existing)
     const saveGoals = (updatedGoals: Goal[]) => {
         setGoals(updatedGoals);
         localStorage.setItem('study_goals', JSON.stringify(updatedGoals));
-
         const completedCount = updatedGoals.filter(g => g.completed).length;
-        if (completedCount >= 5) {
-            unlockAchievement('2');
-        }
+        if (completedCount >= 5) unlockAchievement('2');
     };
 
     const unlockAchievement = (id: string) => {
@@ -62,20 +218,106 @@ const Perfil: React.FC = () => {
 
     const completionRate = goals.length > 0 ? Math.round((goals.filter(g => g.completed).length / goals.length) * 100) : 0;
 
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <i className="fas fa-circle-notch animate-spin text-4xl text-sky-600"></i>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
+            {/* Password Modal */}
+            <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Alterar Senha">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Nova Senha</label>
+                        <input
+                            type="password"
+                            value={passwordForm.new}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="Digite a nova senha"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Confirmar Senha</label>
+                        <input
+                            type="password"
+                            value={passwordForm.confirm}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
+                            placeholder="Confirme a nova senha"
+                        />
+                    </div>
+                    <button
+                        onClick={handleChangePassword}
+                        className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700"
+                    >
+                        Alterar Senha
+                    </button>
+                </div>
+            </Modal>
+
+            {message && (
+                <div className={`mb-4 p-4 rounded-xl font-bold ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                    {message.text}
+                </div>
+            )}
+
             <div className="grid lg:grid-cols-3 gap-8">
                 {/* User Card */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden text-center p-8">
                         <div className="relative inline-block mb-4">
                             <div className="w-32 h-32 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 text-5xl font-bold border-4 border-white shadow-lg mx-auto overflow-hidden">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Concurseiro" alt="Avatar" />
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.full_name}`} alt="Avatar" />
+                                )}
                             </div>
-                            <div className="absolute bottom-0 right-0 bg-green-500 w-6 h-6 rounded-full border-4 border-white"></div>
+                            <label className="absolute bottom-0 right-0 bg-sky-600 text-white w-10 h-10 rounded-full border-4 border-white cursor-pointer flex items-center justify-center hover:bg-sky-700 transition-colors">
+                                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
+                                <i className={`fas ${uploading ? 'fa-circle-notch animate-spin' : 'fa-camera'} text-sm`}></i>
+                            </label>
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-800">Concurseiro imparável</h3>
-                        <p className="text-slate-500 text-sm mb-6">Em busca da vaga dos sonhos</p>
+
+                        {isEditing ? (
+                            <div className="space-y-3 mb-4">
+                                <input
+                                    type="text"
+                                    value={editForm.full_name}
+                                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                                    className="w-full p-2 border-2 border-slate-200 rounded-lg text-center font-bold"
+                                    placeholder="Nome"
+                                />
+                                <textarea
+                                    value={editForm.bio}
+                                    onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                                    className="w-full p-2 border-2 border-slate-200 rounded-lg text-center text-sm"
+                                    placeholder="Biografia"
+                                    rows={2}
+                                />
+                                <div className="flex gap-2">
+                                    <button onClick={handleSaveProfile} className="flex-1 bg-sky-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-sky-700">
+                                        Salvar
+                                    </button>
+                                    <button onClick={() => setIsEditing(false)} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg font-bold text-sm hover:bg-slate-300">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h3 className="text-2xl font-bold text-slate-800">{profile?.full_name}</h3>
+                                <p className="text-slate-500 text-sm mb-4">{profile?.bio}</p>
+                                <button onClick={() => setIsEditing(true)} className="text-sky-600 text-sm font-bold hover:underline mb-4">
+                                    <i className="fas fa-edit mr-1"></i> Editar Perfil
+                                </button>
+                            </>
+                        )}
 
                         <div className="grid grid-cols-2 gap-4 border-t pt-6">
                             <div>
@@ -86,6 +328,15 @@ const Perfil: React.FC = () => {
                                 <p className="text-2xl font-extrabold text-sky-600">{completionRate}%</p>
                                 <p className="text-[10px] uppercase font-bold text-slate-400">Metas batidas</p>
                             </div>
+                        </div>
+
+                        <div className="border-t mt-6 pt-6 space-y-2">
+                            <button onClick={() => setShowPasswordModal(true)} className="w-full text-slate-600 py-2 rounded-lg hover:bg-slate-50 font-bold text-sm flex items-center justify-center gap-2">
+                                <i className="fas fa-key"></i> Alterar Senha
+                            </button>
+                            <button onClick={handleLogout} className="w-full text-red-600 py-2 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center justify-center gap-2">
+                                <i className="fas fa-sign-out-alt"></i> Sair
+                            </button>
                         </div>
                     </div>
 
