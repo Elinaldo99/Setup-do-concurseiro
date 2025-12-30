@@ -47,6 +47,10 @@ const Materias: React.FC = () => {
         title: '', content: '', external_link: '', parent_id: undefined
     });
 
+    const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+    const [editingTopic, setEditingTopic] = useState<SubjectTopic | null>(null);
+    const [editingMaterial, setEditingMaterial] = useState<SubjectMaterial | null>(null);
+
     const [newMaterial, setNewMaterial] = useState<{ name: string, url: string, category: string, topic_id?: string, type: string }>({
         name: '', url: '', category: '', topic_id: '', type: 'PDF'
     });
@@ -79,45 +83,80 @@ const Materias: React.FC = () => {
 
     const handleAddSubject = async () => {
         if (!newSubject.name) return;
-        const { error } = await supabase.from('subjects').insert([newSubject]);
-        if (!error) {
-            setIsSubjectModalOpen(false);
-            setNewSubject({ name: '', description: '', icon: 'fa-book', topics: [] });
-            fetchSubjects();
+
+        if (editingSubject) {
+            const { error } = await supabase.from('subjects').update(newSubject).eq('id', editingSubject.id);
+            if (!error) {
+                setIsSubjectModalOpen(false);
+                setEditingSubject(null);
+                setNewSubject({ name: '', description: '', icon: 'fa-book', topics: [] });
+                fetchSubjects();
+            }
+        } else {
+            const { error } = await supabase.from('subjects').insert([newSubject]);
+            if (!error) {
+                setIsSubjectModalOpen(false);
+                setNewSubject({ name: '', description: '', icon: 'fa-book', topics: [] });
+                fetchSubjects();
+            }
         }
     };
 
     const handleAddTopic = async () => {
         if (!newTopic.title || !selectedSubject) return;
-        const { error } = await supabase.from('subject_topics').insert([{
-            ...newTopic,
-            subject_id: selectedSubject.id
-        }]);
-        if (!error) {
-            setIsTopicModalOpen(false);
-            setNewTopic({ title: '', content: '', external_link: '', parent_id: undefined });
-            fetchTopics(selectedSubject.id);
+
+        if (editingTopic) {
+            const { error } = await supabase.from('subject_topics').update(newTopic).eq('id', editingTopic.id);
+            if (!error) {
+                setIsTopicModalOpen(false);
+                setEditingTopic(null);
+                setNewTopic({ title: '', content: '', external_link: '', parent_id: undefined });
+                fetchTopics(selectedSubject.id);
+            }
+        } else {
+            const { error } = await supabase.from('subject_topics').insert([{
+                ...newTopic,
+                subject_id: selectedSubject.id
+            }]);
+            if (!error) {
+                setIsTopicModalOpen(false);
+                setNewTopic({ title: '', content: '', external_link: '', parent_id: undefined });
+                fetchTopics(selectedSubject.id);
+            }
         }
     };
 
     const handleAddMaterialLink = async () => {
         if (!newMaterial.name || !newMaterial.url || !selectedSubject) return;
 
-        const { error } = await supabase.from('subject_materials').insert({
+        const materialData = {
             subject_id: selectedSubject.id,
             topic_id: newMaterial.topic_id || null,
             name: newMaterial.name,
             url: newMaterial.url,
             type: newMaterial.type,
             category: newMaterial.category
-        });
+        };
 
-        if (!error) {
-            setIsMaterialModalOpen(false);
-            setNewMaterial({ name: '', url: '', category: '', topic_id: '', type: 'PDF' });
-            fetchMaterials(selectedSubject.id);
+        if (editingMaterial) {
+            const { error } = await supabase.from('subject_materials').update(materialData).eq('id', editingMaterial.id);
+            if (!error) {
+                setIsMaterialModalOpen(false);
+                setEditingMaterial(null);
+                setNewMaterial({ name: '', url: '', category: '', topic_id: '', type: 'PDF' });
+                fetchMaterials(selectedSubject.id);
+            } else {
+                alert('Erro ao atualizar link');
+            }
         } else {
-            alert('Erro ao adicionar link');
+            const { error } = await supabase.from('subject_materials').insert(materialData);
+            if (!error) {
+                setIsMaterialModalOpen(false);
+                setNewMaterial({ name: '', url: '', category: '', topic_id: '', type: 'PDF' });
+                fetchMaterials(selectedSubject.id);
+            } else {
+                alert('Erro ao adicionar link');
+            }
         }
     };
 
@@ -134,14 +173,52 @@ const Materias: React.FC = () => {
         fetchSubjects();
     };
 
-    const openMaterialModal = (category: string, topicId?: string) => {
-        setNewMaterial({ name: '', url: '', category, topic_id: topicId, type: 'PDF' });
+    const openMaterialModal = (category: string, material?: SubjectMaterial) => {
+        if (material) {
+            setEditingMaterial(material);
+            setNewMaterial({
+                name: material.name,
+                url: material.url,
+                category: material.category,
+                topic_id: material.topic_id,
+                type: material.type
+            });
+        } else {
+            setEditingMaterial(null);
+            setNewMaterial({ name: '', url: '', category, topic_id: selectedTopic?.id, type: 'PDF' });
+        }
         setIsMaterialModalOpen(true);
     };
 
-    const openTopicModal = (parentId?: string) => {
-        setNewTopic({ title: '', content: '', external_link: '', parent_id: parentId });
+    const openTopicModal = (parentId?: string, topic?: SubjectTopic) => {
+        if (topic) {
+            setEditingTopic(topic);
+            setNewTopic({
+                title: topic.title,
+                content: topic.content,
+                external_link: topic.external_link,
+                parent_id: topic.parent_id
+            });
+        } else {
+            setEditingTopic(null);
+            setNewTopic({ title: '', content: '', external_link: '', parent_id: parentId });
+        }
         setIsTopicModalOpen(true);
+    };
+
+    const openSubjectModal = (subject?: Subject) => {
+        if (subject) {
+            setEditingSubject(subject);
+            setNewSubject({
+                name: subject.name,
+                description: subject.description,
+                icon: subject.icon
+            });
+        } else {
+            setEditingSubject(null);
+            setNewSubject({ name: '', description: '', icon: 'fa-book', topics: [] });
+        }
+        setIsSubjectModalOpen(true);
     };
 
     const handleDeleteTopic = async (e: React.MouseEvent, id: string) => {
@@ -157,7 +234,7 @@ const Materias: React.FC = () => {
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             {/* Subject Modal */}
-            <Modal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} title="Nova Matéria">
+            <Modal isOpen={isSubjectModalOpen} onClose={() => setIsSubjectModalOpen(false)} title={editingSubject ? "Editar Matéria" : "Nova Matéria"}>
                 <div className="space-y-4">
                     <input type="text" placeholder="Nome" className="w-full p-2 border rounded" value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} />
                     <textarea placeholder="Descrição" className="w-full p-2 border rounded" value={newSubject.description} onChange={e => setNewSubject({ ...newSubject, description: e.target.value })} />
@@ -167,7 +244,7 @@ const Materias: React.FC = () => {
             </Modal>
 
             {/* Topic Modal */}
-            <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title="Novo Assunto">
+            <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title={editingTopic ? "Editar Assunto" : "Novo Assunto"}>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Título do Assunto</label>
@@ -200,7 +277,7 @@ const Materias: React.FC = () => {
             </Modal>
 
             {/* Material Link Modal */}
-            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={`Adicionar Novo em ${newMaterial.category === 'questao' ? 'Exercícios' : newMaterial.category === 'mapa' ? 'Mapas Mentais' : 'Apostilas'}`}>
+            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={editingMaterial ? "Editar Material" : `Adicionar Novo em ${newMaterial.category === 'questao' ? 'Exercícios' : newMaterial.category === 'mapa' ? 'Mapas Mentais' : 'Apostilas'}`}>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Título / Nome</label>
@@ -235,7 +312,7 @@ const Materias: React.FC = () => {
                             <i className="fas fa-book-reader text-sky-600"></i> Matérias de Estudo
                         </h2>
                         {isAdmin && (
-                            <button onClick={() => setIsSubjectModalOpen(true)} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center gap-2">
+                            <button onClick={() => openSubjectModal()} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center gap-2">
                                 <i className="fas fa-plus"></i> Nova Matéria
                             </button>
                         )}
@@ -244,9 +321,14 @@ const Materias: React.FC = () => {
                         {subjects.map((s) => (
                             <div key={s.id} onClick={() => setSelectedSubject(s)} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-sky-300 cursor-pointer transition-all group relative">
                                 {isAdmin && (
-                                    <button onClick={(e) => handleDeleteSubject(e, s.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 z-10">
-                                        <i className="fas fa-trash"></i>
-                                    </button>
+                                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                                        <button onClick={(e) => { e.stopPropagation(); openSubjectModal(s); }} className="text-slate-300 hover:text-sky-500">
+                                            <i className="fas fa-edit"></i>
+                                        </button>
+                                        <button onClick={(e) => handleDeleteSubject(e, s.id)} className="text-slate-300 hover:text-red-500">
+                                            <i className="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 )}
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="bg-sky-50 p-3 rounded-xl group-hover:bg-sky-600 transition-colors">
@@ -314,6 +396,13 @@ const Materias: React.FC = () => {
                                                                         <i className="fas fa-plus-circle text-xs"></i>
                                                                     </button>
                                                                     <button
+                                                                        onClick={(e) => { e.stopPropagation(); openTopicModal(undefined, topic); }}
+                                                                        className="p-1.5 text-sky-600 hover:bg-sky-100 rounded"
+                                                                        title="Editar Assunto"
+                                                                    >
+                                                                        <i className="fas fa-edit text-xs"></i>
+                                                                    </button>
+                                                                    <button
                                                                         onClick={(e) => handleDeleteTopic(e, topic.id)}
                                                                         className="p-1.5 text-red-400 hover:bg-red-50 rounded"
                                                                         title="Excluir Assunto"
@@ -340,12 +429,20 @@ const Materias: React.FC = () => {
                                                                 >
                                                                     <span className="text-sm font-medium">{subTopic.title}</span>
                                                                     {isAdmin && (
-                                                                        <button
-                                                                            onClick={(e) => handleDeleteTopic(e, subTopic.id)}
-                                                                            className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover/subtopic:opacity-100"
-                                                                        >
-                                                                            <i className="fas fa-trash text-[10px]"></i>
-                                                                        </button>
+                                                                        <div className="flex gap-1 opacity-0 group-hover/subtopic:opacity-100 transition-opacity">
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); openTopicModal(undefined, subTopic); }}
+                                                                                className="p-1 text-sky-400 hover:text-sky-600"
+                                                                            >
+                                                                                <i className="fas fa-edit text-[10px]"></i>
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => handleDeleteTopic(e, subTopic.id)}
+                                                                                className="p-1 text-red-300 hover:text-red-500"
+                                                                            >
+                                                                                <i className="fas fa-trash text-[10px]"></i>
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             ))}
@@ -398,7 +495,7 @@ const Materias: React.FC = () => {
                                                         <h4 className="font-bold text-slate-700 text-sm">Arquivos do Assunto</h4>
                                                         {isAdmin && (
                                                             <button
-                                                                onClick={() => openMaterialModal('apostila', selectedTopic.id)}
+                                                                onClick={() => openMaterialModal('apostila')}
                                                                 className="text-xs font-bold text-sky-600 hover:underline"
                                                             >
                                                                 + Adicionar Link
@@ -428,12 +525,20 @@ const Materias: React.FC = () => {
                                                                         <i className="fas fa-external-link-alt text-[10px]"></i> Acessar
                                                                     </a>
                                                                     {isAdmin && (
-                                                                        <button
-                                                                            onClick={() => handleDeleteMaterial(m.id)}
-                                                                            className="text-slate-300 hover:text-red-500 transition-colors p-1.5 opacity-0 group-hover/item:opacity-100"
-                                                                        >
-                                                                            <i className="fas fa-trash"></i>
-                                                                        </button>
+                                                                        <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity items-center">
+                                                                            <button
+                                                                                onClick={() => openMaterialModal('apostila', m)}
+                                                                                className="text-slate-300 hover:text-sky-500 transition-colors p-1.5"
+                                                                            >
+                                                                                <i className="fas fa-edit"></i>
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleDeleteMaterial(m.id)}
+                                                                                className="text-slate-300 hover:text-red-500 transition-colors p-1.5"
+                                                                            >
+                                                                                <i className="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -465,9 +570,14 @@ const Materias: React.FC = () => {
                                         {materials.filter(m => m.category === 'questao').map(m => (
                                             <div key={m.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-sky-500 transition-all relative flex flex-col justify-between group">
                                                 {isAdmin && (
-                                                    <button onClick={() => handleDeleteMaterial(m.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
+                                                    <div className="absolute top-2 right-2 flex gap-2 z-10">
+                                                        <button onClick={() => openMaterialModal('questao', m)} className="text-slate-300 hover:text-sky-500">
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onClick={() => handleDeleteMaterial(m.id)} className="text-slate-300 hover:text-red-500">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 )}
 
                                                 <div className="mb-4">
@@ -507,9 +617,14 @@ const Materias: React.FC = () => {
                                         {materials.filter(m => m.category === 'mapa').map(m => (
                                             <div key={m.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-sky-500 transition-all relative flex flex-col justify-between group">
                                                 {isAdmin && (
-                                                    <button onClick={() => handleDeleteMaterial(m.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
+                                                    <div className="absolute top-2 right-2 flex gap-2 z-10">
+                                                        <button onClick={() => openMaterialModal('mapa', m)} className="text-slate-300 hover:text-sky-500">
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onClick={() => handleDeleteMaterial(m.id)} className="text-slate-300 hover:text-red-500">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 )}
 
                                                 <div className="mb-4">
