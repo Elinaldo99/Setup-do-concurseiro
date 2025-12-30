@@ -397,15 +397,15 @@ const Concursos: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                         <div>
-                            <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-3">
                                 <i className="fas fa-file-signature text-sky-600"></i> Provas Anteriores
                             </h2>
-                            <p className="text-slate-500 mt-1">Explore e baixe provas de diversos concursos.</p>
+                            <p className="text-slate-500 mt-1 text-sm">Explore e baixe provas de diversos concursos.</p>
                         </div>
                         {isAdmin && (
-                            <button onClick={() => setIsExamModalOpen(true)} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center gap-2">
+                            <button onClick={() => setIsExamModalOpen(true)} className="w-full sm:w-auto bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center justify-center gap-2">
                                 <i className="fas fa-plus"></i> Novo Concurso
                             </button>
                         )}
@@ -450,7 +450,8 @@ const Concursos: React.FC = () => {
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                        <div className="overflow-x-auto">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[600px]">
                                 <thead>
                                     <tr className="bg-slate-50 border-b">
@@ -500,12 +501,41 @@ const Concursos: React.FC = () => {
                                     ))}
                                 </tbody>
                             </table>
-                            {filteredExams.length === 0 && (
-                                <div className="p-12 text-center text-slate-400">
-                                    <p className="text-lg">Nenhum concurso encontrado.</p>
-                                </div>
-                            )}
                         </div>
+
+                        {/* Mobile List View */}
+                        <div className="md:hidden divide-y">
+                            {filteredExams.map((exam) => (
+                                <div key={exam.id} className="p-4 bg-white hover:bg-sky-50 transition-colors" onClick={() => setSelectedExam(exam)}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-bold text-slate-800 text-lg">{exam.institution}</h4>
+                                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${exam.status === 'Aberto' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`}>
+                                            {exam.status}
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-600 text-sm mb-3">{exam.role}</p>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-400 font-bold">{exam.year}</span>
+                                        <div className="flex gap-4">
+                                            {isAdmin && (
+                                                <div className="flex gap-2">
+                                                    <button onClick={(e) => { e.stopPropagation(); openEditExamModal(exam, e); }} className="text-sky-500 p-2"><i className="fas fa-edit"></i></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteExam(exam.id, e); }} className="text-red-400 p-2"><i className="fas fa-trash"></i></button>
+                                                </div>
+                                            )}
+                                            <span className="text-sky-600 font-bold flex items-center gap-1">
+                                                Detalhes <i className="fas fa-chevron-right text-[8px]"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {filteredExams.length === 0 && (
+                            <div className="p-12 text-center text-slate-400">
+                                <p className="text-lg">Nenhum concurso encontrado.</p>
+                            </div>
+                        )}
                     </div>
                 </>
             )}

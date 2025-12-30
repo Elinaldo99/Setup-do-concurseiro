@@ -266,7 +266,7 @@ const Perfil: React.FC = () => {
                 </div>
             )}
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* User Card */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden text-center p-8">
@@ -357,26 +357,26 @@ const Perfil: React.FC = () => {
                 {/* Goals & Progress */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-8">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <h4 className="text-2xl font-bold text-slate-800">Minhas Metas Semanais</h4>
+                                <h4 className="text-xl sm:text-2xl font-bold text-slate-800">Minhas Metas Semanais</h4>
                                 <p className="text-slate-500 text-sm">Transforme seus sonhos em passos concretos.</p>
                             </div>
-                            <div className="bg-sky-50 px-4 py-2 rounded-2xl border border-sky-100">
+                            <div className="bg-sky-50 px-4 py-2 rounded-2xl border border-sky-100 w-full sm:w-auto text-center">
                                 <span className="text-sky-700 font-bold text-sm">{goals.filter(g => g.completed).length}/{goals.length} Feitas</span>
                             </div>
                         </div>
 
-                        <div className="flex gap-2 mb-8">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-8">
                             <input
                                 type="text"
                                 placeholder="Ex: Resolver 50 questões de Direito..."
                                 value={newGoalText}
                                 onChange={(e) => setNewGoalText(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && addGoal()}
-                                className="flex-1 bg-slate-50 border-2 border-transparent focus:border-sky-300 px-6 py-4 rounded-2xl outline-none transition-all"
+                                className="flex-1 bg-slate-50 border-2 border-transparent focus:border-sky-300 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl outline-none transition-all"
                             />
-                            <button onClick={addGoal} className="bg-sky-600 text-white px-8 rounded-2xl font-bold hover:bg-sky-700 transition-all">
+                            <button onClick={addGoal} className="bg-sky-600 text-white px-8 py-3 sm:py-0 rounded-2xl font-bold hover:bg-sky-700 transition-all">
                                 <i className="fas fa-plus"></i>
                             </button>
                         </div>
@@ -405,7 +405,7 @@ const Perfil: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-8">
                             <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <i className="fas fa-chart-line text-sky-600"></i> Produtividade

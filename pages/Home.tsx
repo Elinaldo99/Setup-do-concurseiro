@@ -43,7 +43,7 @@ const Home: React.FC = () => {
                         <div className="inline-block bg-sky-100 text-sky-700 px-4 py-1 rounded-full text-sm font-bold animate-pulse">
                             🎉 100% focado na sua aprovação
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight">
+                        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight">
                             Sua Vaga no Serviço Público <span className="text-sky-600 underline decoration-sky-300">Começa Aqui.</span>
                         </h1>
                         <p className="text-lg text-slate-600 max-w-lg">
@@ -71,18 +71,18 @@ const Home: React.FC = () => {
                         <h2 className="text-3xl font-bold text-slate-800">Explore Nossas Ferramentas</h2>
                         <p className="text-slate-500 mt-2">Tudo o que você precisa para uma preparação de alto nível.</p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
                         {features.map((feature, i) => (
                             <Link
                                 key={i}
                                 to={feature.path}
-                                className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all group text-center"
+                                className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all group text-center"
                             >
-                                <div className={`${feature.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+                                <div className={`${feature.color} w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
                                     <i className={`fas ${feature.icon}`}></i>
                                 </div>
-                                <h3 className="font-bold text-slate-800 text-lg mb-1">{feature.title}</h3>
-                                <p className="text-slate-500 text-xs leading-relaxed">{feature.desc}</p>
+                                <h3 className="font-bold text-slate-800 text-sm sm:text-lg mb-1">{feature.title}</h3>
+                                <p className="text-slate-500 text-[10px] sm:text-xs leading-relaxed line-clamp-2">{feature.desc}</p>
                             </Link>
                         ))}
                     </div>
@@ -100,7 +100,7 @@ const Home: React.FC = () => {
                     </div>
                     <button className="text-sky-600 font-bold hover:underline hidden sm:block">Ver todas as notícias</button>
                 </div>
-                <div className="grid md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                     {news.map(item => (
                         <div key={item.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-all group cursor-pointer">
                             <div className="relative h-48 overflow-hidden">
@@ -125,11 +125,11 @@ const Home: React.FC = () => {
 
             {/* Simple CTA */}
             <section className="max-w-7xl mx-auto px-4">
-                <div className="bg-sky-600 rounded-[40px] p-12 text-center text-white relative overflow-hidden">
+                <div className="bg-sky-600 rounded-[30px] sm:rounded-[40px] p-8 sm:p-12 text-center text-white relative overflow-hidden">
                     <div className="relative z-10">
-                        <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Pronto para ser o próximo aprovado?</h2>
-                        <p className="text-sky-100 mb-8 max-w-2xl mx-auto">Milhares de concurseiros já estão usando o Setup do Concurseiro para organizar seus estudos e bater metas.</p>
-                        <Link to="/perfil" className="bg-white text-sky-600 px-10 py-4 rounded-full font-bold text-lg hover:bg-sky-50 transition-colors shadow-xl">Criar meu Perfil Grátis</Link>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-4 leading-tight">Pronto para ser o próximo aprovado?</h2>
+                        <p className="text-sky-100 mb-8 max-w-2xl mx-auto text-sm sm:text-base">Milhares de concurseiros já estão usando o Setup do Concurseiro para organizar seus estudos e bater metas.</p>
+                        <Link to="/perfil" className="bg-white text-sky-600 px-8 sm:px-10 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-sky-50 transition-colors shadow-xl inline-block">Criar meu Perfil Grátis</Link>
                     </div>
                     <i className="fas fa-graduation-cap absolute right-[-20px] bottom-[-20px] text-[200px] text-white/5 pointer-events-none -rotate-12"></i>
                 </div>

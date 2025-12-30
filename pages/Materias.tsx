@@ -240,7 +240,7 @@ const Materias: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {subjects.map((s) => (
                             <div key={s.id} onClick={() => setSelectedSubject(s)} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-sky-300 cursor-pointer transition-all group relative">
                                 {isAdmin && (
@@ -266,16 +266,16 @@ const Materias: React.FC = () => {
                     </button>
 
                     <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                        <div className="p-6 bg-slate-50 border-b flex items-center justify-between">
+                        <div className="p-4 sm:p-6 bg-slate-50 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="bg-sky-600 p-3 rounded-xl">
-                                    <i className={`fas ${selectedSubject.icon} text-white text-2xl`}></i>
+                                <div className="bg-sky-600 p-2 sm:p-3 rounded-xl">
+                                    <i className={`fas ${selectedSubject.icon} text-white text-xl sm:text-2xl`}></i>
                                 </div>
-                                <h3 className="text-2xl font-bold text-slate-800">{selectedSubject.name}</h3>
+                                <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{selectedSubject.name}</h3>
                             </div>
                             {isAdmin && (
-                                <div className="flex gap-2">
-                                    <button onClick={() => openTopicModal()} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                <div className="flex gap-2 w-full sm:w-auto">
+                                    <button onClick={() => openTopicModal()} className="w-full sm:w-auto bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center justify-center gap-2">
                                         <i className="fas fa-plus"></i> Novo Assunto
                                     </button>
                                 </div>
@@ -288,9 +288,9 @@ const Materias: React.FC = () => {
                             <TabButton active={activeTab === 'mapas'} onClick={() => setActiveTab('mapas')} icon="fa-project-diagram" label="Mapas Mentais" />
                         </div>
 
-                        <div className="p-6 min-h-[400px]">
+                        <div className="p-4 sm:p-6 min-h-[400px]">
                             {activeTab === 'apostilas' && (
-                                <div className="grid md:grid-cols-2 gap-6 items-start">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                                     <div className="space-y-4">
                                         <h4 className="font-bold text-slate-400 text-xs uppercase">Assuntos</h4>
                                         <div className="space-y-4">

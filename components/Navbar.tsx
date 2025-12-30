@@ -23,11 +23,11 @@ const Navbar: React.FC = () => {
         <nav className="bg-white shadow-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <div className="bg-sky-600 p-2 rounded-lg group-hover:bg-sky-500 transition-colors">
-                            <i className="fas fa-graduation-cap text-white text-xl"></i>
+                    <Link to="/" className="flex items-center gap-2 group shrink-0">
+                        <div className="bg-sky-600 p-1.5 sm:p-2 rounded-lg group-hover:bg-sky-500 transition-colors">
+                            <i className="fas fa-graduation-cap text-white text-lg sm:text-xl"></i>
                         </div>
-                        <span className="font-bold text-xl text-slate-800 tracking-tight">Setup do <span className="text-sky-600">Concurseiro</span></span>
+                        <span className="font-bold text-base sm:text-xl text-slate-800 tracking-tight whitespace-nowrap">Setup do <span className="text-sky-600">Concurseiro</span></span>
                     </Link>
 
                     {/* Desktop Menu */}

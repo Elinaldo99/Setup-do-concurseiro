@@ -196,14 +196,14 @@ const Cronograma: React.FC = () => {
                 </div>
             )}
 
-            <div className="mb-8">
-                <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <div className="mb-8 p-4 sm:p-0">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-3">
                     <i className="fas fa-calendar-alt text-sky-600"></i> Gestão de Cronogramas
                 </h2>
-                <p className="text-slate-500 mt-1">Crie sua rotina personalizada ou baixe planos de estudos estratégicos prontos.</p>
+                <p className="text-slate-500 mt-1 text-sm sm:text-base">Crie sua rotina personalizada ou baixe planos de estudos estratégicos prontos.</p>
             </div>
 
-            <div className="grid lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-1 space-y-6">
                     {/* Form to add personal blocks */}
                     <div className="bg-white p-6 rounded-3xl shadow-md border border-sky-100 space-y-4">
@@ -299,8 +299,8 @@ const Cronograma: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="lg:col-span-3 order-first lg:order-last">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                         {DAYS_OF_WEEK.map(day => {
                             const dayBlocks = blocks.filter(b => b.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
                             return (

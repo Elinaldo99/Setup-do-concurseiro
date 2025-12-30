@@ -356,29 +356,29 @@ const Dicas: React.FC = () => {
                 </div>
             )}
 
-            <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-3">
                     <i className="fas fa-magic text-sky-600"></i> Dicas Estratégicas
                 </h2>
                 {isAdmin && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         <button
                             onClick={() => setShowTipModal(true)}
-                            className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2"
+                            className="flex-1 sm:flex-none bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center justify-center gap-2 text-sm sm:text-base"
                         >
-                            <i className="fas fa-plus"></i> Nova Dica
+                            <i className="fas fa-plus"></i> Nova
                         </button>
                         <button
                             onClick={() => setShowFileModal(true)}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-2"
+                            className="flex-1 sm:flex-none bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center justify-center gap-2 text-sm sm:text-base"
                         >
-                            <i className="fas fa-upload"></i> Nova Apostila
+                            <i className="fas fa-upload"></i> Apostila
                         </button>
                     </div>
                 )}
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                     <h3 className="text-xl font-bold text-slate-800 mb-4">Guias de Estudo Recomendados</h3>
                     {tips.length === 0 ? (
@@ -389,7 +389,7 @@ const Dicas: React.FC = () => {
                     ) : (
                         <div className="grid md:grid-cols-2 gap-6">
                             {tips.map(tip => (
-                                <div key={tip.id} className="bg-white p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all flex flex-col justify-between relative group">
+                                <div key={tip.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all flex flex-col justify-between relative group">
                                     {isAdmin && (
                                         <button
                                             onClick={() => handleDeleteTip(tip.id)}
