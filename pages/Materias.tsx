@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 interface SubjectTopic {
     id: string;
     subject_id: string;
+    parent_id?: string;
     title: string;
     content: string;
     external_link: string;
@@ -44,7 +45,7 @@ const Materias: React.FC = () => {
     });
 
     const [newTopic, setNewTopic] = useState<Partial<SubjectTopic>>({
-        title: '', content: '', external_link: ''
+        title: '', content: '', external_link: '', parent_id: undefined
     });
 
     const [newMaterial, setNewMaterial] = useState<{ name: string, url: string, category: string, topic_id?: string, type: string }>({
@@ -95,7 +96,7 @@ const Materias: React.FC = () => {
         }]);
         if (!error) {
             setIsTopicModalOpen(false);
-            setNewTopic({ title: '', content: '', external_link: '' });
+            setNewTopic({ title: '', content: '', external_link: '', parent_id: undefined });
             fetchTopics(selectedSubject.id);
         }
     };
@@ -176,6 +177,21 @@ const Materias: React.FC = () => {
         setIsMaterialModalOpen(true);
     };
 
+    const openTopicModal = (parentId?: string) => {
+        setNewTopic({ title: '', content: '', external_link: '', parent_id: parentId });
+        setIsTopicModalOpen(true);
+    };
+
+    const handleDeleteTopic = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm('Excluir este assunto? Isso apagará também os sub-assuntos.')) return;
+        const { error } = await supabase.from('subject_topics').delete().eq('id', id);
+        if (!error && selectedSubject) {
+            fetchTopics(selectedSubject.id);
+            if (selectedTopic?.id === id) setSelectedTopic(null);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             {/* Subject Modal */}
@@ -191,9 +207,32 @@ const Materias: React.FC = () => {
             {/* Topic Modal */}
             <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title="Novo Assunto">
                 <div className="space-y-4">
-                    <input type="text" placeholder="Título do Assunto" className="w-full p-2 border rounded" value={newTopic.title} onChange={e => setNewTopic({ ...newTopic, title: e.target.value })} />
-                    <textarea placeholder="Conteúdo (Texto para leitura)" className="w-full p-2 border rounded h-32" value={newTopic.content} onChange={e => setNewTopic({ ...newTopic, content: e.target.value })} />
-                    <input type="text" placeholder="Link Externo (URL)" className="w-full p-2 border rounded" value={newTopic.external_link} onChange={e => setNewTopic({ ...newTopic, external_link: e.target.value })} />
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Título do Assunto</label>
+                        <input type="text" placeholder="Ex: Introdução à Administração" className="w-full p-2 border rounded" value={newTopic.title} onChange={e => setNewTopic({ ...newTopic, title: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Vincular a um Assunto Principal / Grupo (Opcional)</label>
+                        <select
+                            className="w-full p-2 border rounded bg-white"
+                            value={newTopic.parent_id || ''}
+                            onChange={e => setNewTopic({ ...newTopic, parent_id: e.target.value || undefined })}
+                        >
+                            <option value="">Nenhum (Será um Assunto Principal)</option>
+                            {topics.filter(t => !t.parent_id).map(t => (
+                                <option key={t.id} value={t.id}>{t.title}</option>
+                            ))}
+                        </select>
+                        <p className="text-[10px] text-slate-400 mt-1">Selecione um "Capítulo" para que este assunto seja um "Sub-capítulo".</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Conteúdo (Texto para leitura)</label>
+                        <textarea placeholder="Escreva ou cole o conteúdo aqui..." className="w-full p-2 border rounded h-32" value={newTopic.content} onChange={e => setNewTopic({ ...newTopic, content: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Link Externo (URL)</label>
+                        <input type="text" placeholder="https://..." className="w-full p-2 border rounded" value={newTopic.external_link} onChange={e => setNewTopic({ ...newTopic, external_link: e.target.value })} />
+                    </div>
                     <button onClick={handleAddTopic} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar Assunto</button>
                 </div>
             </Modal>
@@ -296,14 +335,67 @@ const Materias: React.FC = () => {
                                 <div className="grid md:grid-cols-2 gap-6 items-start">
                                     <div className="space-y-4">
                                         <h4 className="font-bold text-slate-400 text-xs uppercase">Assuntos</h4>
-                                        {topics.map(topic => (
-                                            <div key={topic.id} onClick={() => setSelectedTopic(topic)} className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedTopic?.id === topic.id ? 'border-sky-500 bg-sky-50' : 'border-slate-100 hover:border-sky-300'}`}>
-                                                <div className="flex justify-between items-center">
-                                                    <h4 className="font-bold text-slate-800">{topic.title}</h4>
-                                                    <i className="fas fa-chevron-right text-slate-400 text-xs"></i>
+                                        <div className="space-y-4">
+                                            {topics.filter(t => !t.parent_id).map(topic => (
+                                                <div key={topic.id} className="space-y-2">
+                                                    <div
+                                                        onClick={() => setSelectedTopic(topic)}
+                                                        className={`p-4 border rounded-xl cursor-pointer transition-all flex justify-between items-center group/topic ${selectedTopic?.id === topic.id ? 'border-sky-500 bg-sky-50' : 'border-slate-100 hover:border-sky-300'}`}
+                                                    >
+                                                        <div className="flex-1">
+                                                            <h4 className="font-bold text-slate-800">{topic.title}</h4>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {isAdmin && (
+                                                                <div className="flex gap-1 opacity-0 group-hover/topic:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); openTopicModal(topic.id); }}
+                                                                        className="p-1.5 text-sky-600 hover:bg-sky-100 rounded"
+                                                                        title="Adicionar Sub-assunto"
+                                                                    >
+                                                                        <i className="fas fa-plus-circle text-xs"></i>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => handleDeleteTopic(e, topic.id)}
+                                                                        className="p-1.5 text-red-400 hover:bg-red-50 rounded"
+                                                                        title="Excluir Assunto"
+                                                                    >
+                                                                        <i className="fas fa-trash text-xs"></i>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            <i className={`fas fa-chevron-right text-slate-400 text-xs transition-transform ${selectedTopic?.id === topic.id ? 'rotate-90' : ''}`}></i>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Sub-topics (Collapsible) */}
+                                                    {(selectedTopic?.id === topic.id || selectedTopic?.parent_id === topic.id) && (
+                                                        <div className="space-y-2 animate-fade-in">
+                                                            {topics.filter(st => st.parent_id === topic.id).map(subTopic => (
+                                                                <div
+                                                                    key={subTopic.id}
+                                                                    onClick={() => setSelectedTopic(subTopic)}
+                                                                    className={`ml-6 p-3 border-l-2 rounded-r-lg cursor-pointer transition-all flex justify-between items-center group/subtopic ${selectedTopic?.id === subTopic.id
+                                                                        ? 'border-sky-500 bg-sky-50 text-sky-700'
+                                                                        : 'border-slate-100 hover:border-sky-200 hover:bg-slate-50'
+                                                                        }`}
+                                                                >
+                                                                    <span className="text-sm font-medium">{subTopic.title}</span>
+                                                                    {isAdmin && (
+                                                                        <button
+                                                                            onClick={(e) => handleDeleteTopic(e, subTopic.id)}
+                                                                            className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover/subtopic:opacity-100"
+                                                                        >
+                                                                            <i className="fas fa-trash text-[10px]"></i>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                         {topics.length === 0 && <p className="text-slate-400 text-sm">Nenhum assunto cadastrado ainda.</p>}
                                     </div>
 
@@ -311,10 +403,28 @@ const Materias: React.FC = () => {
                                         {selectedTopic ? (
                                             <div className="animate-fade-in space-y-6">
                                                 <div className="border-b pb-4">
+                                                    {selectedTopic.parent_id && (
+                                                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                                            <span>{topics.find(t => t.id === selectedTopic.parent_id)?.title}</span>
+                                                            <i className="fas fa-chevron-right text-[8px]"></i>
+                                                        </div>
+                                                    )}
                                                     <h3 className="text-2xl font-bold text-sky-800 mb-2">{selectedTopic.title}</h3>
                                                     {selectedTopic.content && (
                                                         <div className="prose text-slate-600 whitespace-pre-wrap text-sm mb-4">
                                                             {selectedTopic.content}
+                                                        </div>
+                                                    )}
+                                                    {!selectedTopic.parent_id && topics.some(t => t.parent_id === selectedTopic.id) && (
+                                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Sub-assuntos neste capítulo:</h5>
+                                                            <div className="grid grid-cols-1 gap-2">
+                                                                {topics.filter(t => t.parent_id === selectedTopic.id).map(st => (
+                                                                    <button key={st.id} onClick={() => setSelectedTopic(st)} className="text-left py-1 text-sky-600 hover:underline text-sm flex items-center gap-2">
+                                                                        <i className="fas fa-book-open text-[10px]"></i> {st.title}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                     {selectedTopic.external_link && (
