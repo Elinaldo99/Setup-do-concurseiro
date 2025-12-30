@@ -38,7 +38,6 @@ const Materias: React.FC = () => {
     const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
     const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
     const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
-    const [uploading, setUploading] = useState(false);
 
     const [newSubject, setNewSubject] = useState<Partial<Subject>>({
         name: '', description: '', icon: 'fa-book', topics: []
@@ -119,43 +118,6 @@ const Materias: React.FC = () => {
             fetchMaterials(selectedSubject.id);
         } else {
             alert('Erro ao adicionar link');
-        }
-    };
-
-    // Kept for "Apostilas" file upload if needed, or remove if "Apostilas" also moves to links entirely. 
-    // The user request specified "tanto em exercícios como em mapas mentais", implying Apostilas might stay as is or is separate.
-    // However, I'll keep the file upload for Apostilas as implemented previously unless requested otherwise.
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, topicId?: string, category: string = 'apostila') => {
-        if (!e.target.files || e.target.files.length === 0 || !selectedSubject) return;
-        const file = e.target.files[0];
-        setUploading(true);
-
-        try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${selectedSubject.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage.from('materials').upload(filePath, file);
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(filePath);
-
-            const { error: dbError } = await supabase.from('subject_materials').insert({
-                subject_id: selectedSubject.id,
-                topic_id: topicId || null,
-                name: file.name,
-                type: fileExt?.toUpperCase(),
-                url: publicUrl,
-                category
-            });
-
-            if (dbError) throw dbError;
-            fetchMaterials(selectedSubject.id);
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao enviar arquivo');
-        } finally {
-            setUploading(false);
         }
     };
 
@@ -313,11 +275,7 @@ const Materias: React.FC = () => {
                             </div>
                             {isAdmin && (
                                 <div className="flex gap-2">
-                                    <label className="bg-white border text-sky-600 px-4 py-2 rounded-lg font-bold hover:bg-sky-50 cursor-pointer flex items-center gap-2">
-                                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, undefined, 'apostila')} />
-                                        <i className="fas fa-upload"></i> Upload Geral (Apostilas)
-                                    </label>
-                                    <button onClick={() => setIsTopicModalOpen(true)} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                    <button onClick={() => openTopicModal()} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
                                         <i className="fas fa-plus"></i> Novo Assunto
                                     </button>
                                 </div>
