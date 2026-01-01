@@ -4,6 +4,8 @@ import { Subject } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { useAdmin } from '../hooks/useAdmin';
 import Modal from '../components/Modal';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 interface SubjectTopic {
     id: string;
@@ -24,6 +26,26 @@ interface SubjectMaterial {
     type: string;
     category: string;
 }
+
+
+const modules = {
+    toolbar: [
+        [{ 'header': [1, 2, false] }],
+        ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link'],
+        ['clean']
+    ],
+};
+
+const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet',
+    'align',
+    'link'
+];
 
 const Materias: React.FC = () => {
     const { isAdmin } = useAdmin();
@@ -264,9 +286,41 @@ const Materias: React.FC = () => {
                         </select>
                         <p className="text-[10px] text-slate-400 mt-1">Selecione um "Capítulo" para que este assunto seja um "Sub-capítulo".</p>
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Conteúdo (Texto para leitura)</label>
-                        <textarea placeholder="Escreva ou cole o conteúdo aqui..." className="w-full p-2 border rounded h-32" value={newTopic.content} onChange={e => setNewTopic({ ...newTopic, content: e.target.value })} />
+                    <div className="space-y-2">
+                        <label className="block text-sm font-bold text-slate-700">Conteúdo (Texto para leitura)</label>
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <ReactQuill
+                                theme="snow"
+                                value={newTopic.content || ''}
+                                onChange={(content) => setNewTopic({ ...newTopic, content })}
+                                modules={modules}
+                                formats={formats}
+                                placeholder="Escreva ou cole o conteúdo aqui..."
+                                className="quill-editor"
+                            />
+                        </div>
+                        <style>{`
+                                .quill-editor {
+                                    margin-bottom: 2rem;
+                                }
+                                .quill-editor .ql-container {
+                                    height: 250px;
+                                    font-size: 14px;
+                                }
+                                .quill-editor .ql-editor {
+                                    height: 100%;
+                                }
+                                /* Garantir que o Justificado funcione na visualização */
+                                .ql-align-justify {
+                                    text-align: justify;
+                                }
+                                .ql-align-center {
+                                    text-align: center;
+                                }
+                                .ql-align-right {
+                                    text-align: right;
+                                }
+                            `}</style>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Link Externo (URL)</label>
@@ -466,8 +520,11 @@ const Materias: React.FC = () => {
                                                     )}
                                                     <h3 className="text-2xl font-bold text-sky-800 mb-2">{selectedTopic.title}</h3>
                                                     {selectedTopic.content && (
-                                                        <div className="prose text-slate-600 whitespace-pre-wrap text-sm mb-4">
-                                                            {selectedTopic.content}
+                                                        <div className="ql-snow">
+                                                            <div
+                                                                className="ql-editor text-slate-600 text-sm mb-4 !p-0"
+                                                                dangerouslySetInnerHTML={{ __html: selectedTopic.content }}
+                                                            />
                                                         </div>
                                                     )}
                                                     {!selectedTopic.parent_id && topics.some(t => t.parent_id === selectedTopic.id) && (
