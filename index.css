@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos para o ReactQuill e Visualização de Conteúdo */
+.quill-editor {
+    margin-bottom: 2rem;
+}
+
+.quill-editor .ql-container {
+    height: 250px;
+    font-size: 14px;
+}
+
+.quill-editor .ql-editor {
+    height: 100%;
+}
+
+/* Estilos para a área de VISUALIZAÇÃO e Editor */
+.ql-editor {
+    min-height: auto;
+}
+
+.ql-editor p {
+    margin-bottom: 1rem !important;
+    line-height: 1.6;
+}
+
+.ql-editor h1, .ql-editor h2, .ql-editor h3 {
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+    font-weight: bold !important;
+    line-height: 1.3;
+    color: #1e293b; /* slate-800 */
+}
+
+.ql-editor ul, .ql-editor ol {
+    margin-bottom: 1rem !important;
+    padding-left: 1.5rem !important;
+}
+
+.ql-editor li {
+    margin-bottom: 0.5rem !important;
+}
+
+.ql-align-justify {
+    text-align: justify;
+}
+
+.ql-align-center {
+    text-align: center;
+}
+
+.ql-align-right {
+    text-align: right;
+}
+
+.ql-editor strong {
+    font-weight: bold !important;
+    color: #0f172a; /* slate-900 */
+}

@@ -299,28 +299,6 @@ const Materias: React.FC = () => {
                                 className="quill-editor"
                             />
                         </div>
-                        <style>{`
-                                .quill-editor {
-                                    margin-bottom: 2rem;
-                                }
-                                .quill-editor .ql-container {
-                                    height: 250px;
-                                    font-size: 14px;
-                                }
-                                .quill-editor .ql-editor {
-                                    height: 100%;
-                                }
-                                /* Garantir que o Justificado funcione na visualização */
-                                .ql-align-justify {
-                                    text-align: justify;
-                                }
-                                .ql-align-center {
-                                    text-align: center;
-                                }
-                                .ql-align-right {
-                                    text-align: right;
-                                }
-                            `}</style>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Link Externo (URL)</label>
