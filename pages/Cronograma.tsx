@@ -205,17 +205,6 @@ const Cronograma: React.FC = () => {
                         title="Document Preview"
                     />
                 </div>
-                <div className="mt-4 flex justify-end">
-                    <a
-                        href={previewModal.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sky-600 hover:text-sky-700 font-bold text-sm flex items-center gap-2"
-                    >
-                        <i className="fas fa-external-link-alt"></i>
-                        Abrir em nova aba
-                    </a>
-                </div>
             </Modal>
 
             {message && (
