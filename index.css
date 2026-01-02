@@ -19,6 +19,12 @@
 /* Estilos para a área de VISUALIZAÇÃO e Editor */
 .ql-editor {
     min-height: auto;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+    text-justify: inter-word;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .ql-editor p {
