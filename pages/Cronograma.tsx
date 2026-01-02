@@ -25,6 +25,11 @@ const Cronograma: React.FC = () => {
 
     // Modal states
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; url: string; title: string }>({
+        isOpen: false,
+        url: '',
+        title: ''
+    });
     const [newSchedule, setNewSchedule] = useState({
         institution: '',
         role: '',
@@ -127,16 +132,12 @@ const Cronograma: React.FC = () => {
         }
     };
 
-    const handleDownload = (url: string, name: string) => {
-        setDownloading(name);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = name;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => setDownloading(null), 1000);
+    const handleOpenPreview = (url: string, title: string) => {
+        setPreviewModal({
+            isOpen: true,
+            url,
+            title
+        });
     };
 
     const getSubjectName = (id: string) => SUBJECTS.find(s => s.id === id)?.name || id;
@@ -187,6 +188,33 @@ const Cronograma: React.FC = () => {
                     >
                         {uploading ? <i className="fas fa-circle-notch animate-spin"></i> : 'Adicionar Cronograma'}
                     </button>
+                </div>
+            </Modal>
+
+            {/* Preview Modal */}
+            <Modal
+                isOpen={previewModal.isOpen}
+                onClose={() => setPreviewModal({ ...previewModal, isOpen: false })}
+                title={previewModal.title}
+                maxWidth="max-w-4xl"
+            >
+                <div className="w-full h-[70vh] rounded-xl overflow-hidden bg-slate-100">
+                    <iframe
+                        src={previewModal.url}
+                        className="w-full h-full border-none"
+                        title="Document Preview"
+                    />
+                </div>
+                <div className="mt-4 flex justify-end">
+                    <a
+                        href={previewModal.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-600 hover:text-sky-700 font-bold text-sm flex items-center gap-2"
+                    >
+                        <i className="fas fa-external-link-alt"></i>
+                        Abrir em nova aba
+                    </a>
                 </div>
             </Modal>
 
@@ -243,7 +271,7 @@ const Cronograma: React.FC = () => {
                     <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 space-y-4">
                         <div className="flex justify-between items-center">
                             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                                <i className="fas fa-file-pdf text-red-500"></i> Cronogramas Prontos
+                                <i className="fas fa-file-pdf text-red-500"></i> Plano de Estudo
                             </h3>
                             {isAdmin && (
                                 <button
@@ -276,7 +304,7 @@ const Cronograma: React.FC = () => {
                                             </button>
                                         )}
                                         <div
-                                            onClick={() => handleDownload(schedule.file_url, `${schedule.institution} - ${schedule.role}`)}
+                                            onClick={() => handleOpenPreview(schedule.file_url, `${schedule.institution} - ${schedule.role}`)}
                                             className="flex items-center gap-3 flex-1 cursor-pointer"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-sm">
