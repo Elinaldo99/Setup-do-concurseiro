@@ -28,6 +28,8 @@ const Dicas: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('Todas');
+    const categories = ['Todas', 'Produtividade', 'Estratégia', 'Memorização', 'Motivação'];
 
     // Modals
     const [showTipModal, setShowTipModal] = useState(false);
@@ -380,6 +382,21 @@ const Dicas: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedCategory === cat
+                                        ? 'bg-sky-600 text-white shadow-md shadow-sky-100'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-sky-300 hover:text-sky-600'
+                                    }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+
                     <h3 className="text-xl font-bold text-slate-800 mb-4">Guias de Estudo Recomendados</h3>
                     {tips.length === 0 ? (
                         <div className="text-center py-12 text-slate-400">
@@ -388,33 +405,35 @@ const Dicas: React.FC = () => {
                         </div>
                     ) : (
                         <div className="grid md:grid-cols-2 gap-6">
-                            {tips.map(tip => (
-                                <div key={tip.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all flex flex-col justify-between relative group">
-                                    {isAdmin && (
-                                        <button
-                                            onClick={() => handleDeleteTip(tip.id)}
-                                            className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <i className="fas fa-trash"></i>
-                                        </button>
-                                    )}
-                                    <div>
-                                        <span className="text-[10px] font-extrabold text-sky-600 bg-sky-50 px-3 py-1 rounded-full uppercase tracking-widest">{tip.category}</span>
-                                        <h4 className="text-xl font-bold text-slate-800 mt-3 mb-2">{tip.title}</h4>
-                                        <p className="text-slate-600 text-sm mb-6 leading-relaxed">{tip.summary}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        {tip.content && (
+                            {tips
+                                .filter(tip => selectedCategory === 'Todas' || tip.category === selectedCategory)
+                                .map(tip => (
+                                    <div key={tip.id} className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-100 hover:shadow-lg transition-all flex flex-col justify-between relative group">
+                                        {isAdmin && (
                                             <button
-                                                onClick={() => handleReadTip(tip)}
-                                                className="flex-1 py-3 bg-sky-50 text-sky-600 rounded-xl font-bold text-sm hover:bg-sky-100 transition-colors flex items-center justify-center gap-2"
+                                                onClick={() => handleDeleteTip(tip.id)}
+                                                className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
-                                                <i className="fas fa-book-open"></i> Ler
+                                                <i className="fas fa-trash"></i>
                                             </button>
                                         )}
+                                        <div>
+                                            <span className="text-[10px] font-extrabold text-sky-600 bg-sky-50 px-3 py-1 rounded-full uppercase tracking-widest">{tip.category}</span>
+                                            <h4 className="text-xl font-bold text-slate-800 mt-3 mb-2">{tip.title}</h4>
+                                            <p className="text-slate-600 text-sm mb-6 leading-relaxed">{tip.summary}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {tip.content && (
+                                                <button
+                                                    onClick={() => handleReadTip(tip)}
+                                                    className="flex-1 py-3 bg-sky-50 text-sky-600 rounded-xl font-bold text-sm hover:bg-sky-100 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <i className="fas fa-book-open"></i> Ler
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     )}
                 </div>
