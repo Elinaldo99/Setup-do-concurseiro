@@ -34,9 +34,12 @@ const modules = {
         ['bold', 'italic', 'underline', 'strike', 'blockquote'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         [{ 'align': [] }],
-        ['link'],
+        ['link', 'image'],
         ['clean']
     ],
+    clipboard: {
+        matchVisual: false,
+    }
 };
 
 const formats = [
@@ -44,7 +47,8 @@ const formats = [
     'bold', 'italic', 'underline', 'strike', 'blockquote',
     'list', 'bullet',
     'align',
-    'link'
+    'link',
+    'image'
 ];
 
 const Materias: React.FC = () => {
@@ -266,7 +270,7 @@ const Materias: React.FC = () => {
             </Modal>
 
             {/* Topic Modal */}
-            <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title={editingTopic ? "Editar Assunto" : "Novo Assunto"}>
+            <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title={editingTopic ? "Editar Assunto" : "Novo Assunto"} maxWidth="max-w-4xl">
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Título do Assunto</label>
@@ -404,7 +408,7 @@ const Materias: React.FC = () => {
 
                         <div className="p-4 sm:p-6 min-h-[400px]">
                             {activeTab === 'apostilas' && (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
                                     <div className="space-y-4">
                                         <h4 className="font-bold text-slate-400 text-xs uppercase">Assuntos</h4>
                                         <div className="space-y-4">
@@ -486,7 +490,7 @@ const Materias: React.FC = () => {
                                         {topics.length === 0 && <p className="text-slate-400 text-sm">Nenhum assunto cadastrado ainda.</p>}
                                     </div>
 
-                                    <div className="space-y-6">
+                                    <div className="lg:col-span-3 space-y-6">
                                         {selectedTopic ? (
                                             <div className="animate-fade-in space-y-6">
                                                 <div className="border-b pb-4">
