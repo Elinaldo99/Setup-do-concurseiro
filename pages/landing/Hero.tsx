@@ -4,7 +4,7 @@ import { ChevronRight, ShieldCheck, Monitor, AppWindow } from 'lucide-react';
 
 export const Hero: React.FC = () => {
     return (
-        <section className="relative pt-32 pb-20 overflow-hidden bg-white">
+        <section id="home" className="relative pt-32 pb-20 overflow-hidden bg-white">
             {/* Background patterns */}
             {/* Fix: Corrected 'size' to 'backgroundSize' in the style object as 'size' is not a valid CSS property in React style objects */}
             <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#0284c7 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
