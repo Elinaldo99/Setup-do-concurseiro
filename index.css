@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Landing Page Styles */
+h1,
+h2,
+h3 {
+    font-family: 'Poppins', sans-serif;
+}
+
+.setup-gradient {
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+}
+
+
 /* Estilos para o ReactQuill e Visualização de Conteúdo */
 .quill-editor {
     margin-bottom: 2rem;
