@@ -22,7 +22,7 @@ export const Hero: React.FC = () => {
                         </h1>
 
                         <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                            Não é apenas um PDF. O <b>Setup do Concurseiro</b> é uma plataforma completa com videoaulas, simulados, mapas mentais e cronogramas inteligentes. Tudo pré-moldado para sua aprovação.
+                            Não é apenas um conteúdo. O <b>Setup do Concurseiro</b> é uma plataforma completa com videoaulas, simulados, mapas mentais e <b>apostilas em PDF</b>. Tudo pré-moldado para sua aprovação.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
@@ -42,7 +42,7 @@ export const Hero: React.FC = () => {
                         <div className="grid grid-cols-3 gap-8 border-t border-slate-100 pt-8">
                             <div>
                                 <p className="text-2xl font-black text-slate-900">+100k</p>
-                                <p className="text-sm text-slate-500 font-medium">Questões</p>
+                                <p className="text-sm text-slate-500 font-medium">Questões em PDF</p>
                             </div>
                             <div>
                                 <p className="text-2xl font-black text-slate-900">30+</p>

@@ -19,7 +19,7 @@ export const BonusSection: React.FC = () => {
         {
             icon: <BarChart3 className="h-8 w-8 text-white" />,
             title: "3. Treino Massivo",
-            desc: "Resolução de questões com nossa dashboard de performance em tempo real.",
+            desc: "Resolução de cadernos de questões em PDF com nossa dashboard de performance.",
             color: "bg-emerald-600"
         },
         {

@@ -22,7 +22,7 @@ export const SubjectSection: React.FC = () => {
                     <span className="text-sky-400 font-bold tracking-widest uppercase text-sm">CONTEÚDO COMPLETO</span>
                     <h2 className="text-3xl md:text-5xl font-extrabold mt-2">Mais de 30 Matérias <span className="text-sky-400 underline decoration-sky-400/30">Mapeadas</span></h2>
                     <p className="text-slate-400 mt-4 max-w-2xl text-lg">
-                        Apostilas teóricas + Questões de fixação para cobrir 100% do edital dos principais concursos do Brasil.
+                        Apostilas teóricas + Questões de fixação em PDF para cobrir 100% do edital dos principais concursos do Brasil.
                     </p>
                 </div>
 

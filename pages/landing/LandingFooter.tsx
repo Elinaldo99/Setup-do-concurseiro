@@ -29,7 +29,7 @@ export const LandingFooter: React.FC = () => {
                             </span>
                         </div>
                         <p className="max-w-md mb-8 text-slate-400 leading-relaxed">
-                            O Setup do Concurseiro é a maior plataforma de organização e materiais digitais para estudantes que buscam performance e resultados reais em concursos e na vida acadêmica.
+                            O Setup do Concurseiro é a maior plataforma de organização e materiais em PDF para estudantes que buscam performance e resultados reais em concursos e na vida acadêmica.
                         </p>
                         <div className="flex space-x-4">
                             <a href="#" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><Instagram size={20} /></a>

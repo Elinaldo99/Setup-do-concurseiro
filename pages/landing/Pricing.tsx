@@ -31,8 +31,8 @@ export const Pricing: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-12">
                             {[
                                 "Hub de Videoaulas Integrado",
-                                "Apostilas e Resumos Digitais",
-                                "Banco de 100k+ Questões",
+                                "Apostilas e Resumos em PDF",
+                                "Cadernos de Questões em PDF",
                                 "Cronogramas Personalizáveis",
                                 "Mapas Mentais em Alta Definição",
                                 "Acervo de Provas Anteriores",

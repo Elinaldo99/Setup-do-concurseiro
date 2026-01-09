@@ -55,10 +55,11 @@ const Materias: React.FC = () => {
     const { isAdmin } = useAdmin();
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    const [activeTab, setActiveTab] = useState<'apostilas' | 'questoes' | 'mapas'>('apostilas');
+    const [activeTab, setActiveTab] = useState<'apostilas' | 'questoes' | 'mapas' | 'videos'>('apostilas');
     const [topics, setTopics] = useState<SubjectTopic[]>([]);
     const [materials, setMaterials] = useState<SubjectMaterial[]>([]);
     const [selectedTopic, setSelectedTopic] = useState<SubjectTopic | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // Admin Modal State
     const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -91,6 +92,12 @@ const Materias: React.FC = () => {
             fetchMaterials(selectedSubject.id);
         }
     }, [selectedSubject]);
+
+    useEffect(() => {
+        if (selectedTopic) {
+            setPreviewUrl(selectedTopic.external_link || null);
+        }
+    }, [selectedTopic]);
 
     const fetchSubjects = async () => {
         const { data, error } = await supabase.from('subjects').select('*').order('name');
@@ -211,7 +218,7 @@ const Materias: React.FC = () => {
             });
         } else {
             setEditingMaterial(null);
-            setNewMaterial({ name: '', url: '', category, topic_id: selectedTopic?.id, type: 'PDF' });
+            setNewMaterial({ name: '', url: '', category, topic_id: selectedTopic?.id, type: category === 'video' ? 'VIDEO' : 'PDF' });
         }
         setIsMaterialModalOpen(true);
     };
@@ -290,20 +297,7 @@ const Materias: React.FC = () => {
                         </select>
                         <p className="text-[10px] text-slate-400 mt-1">Selecione um "Capítulo" para que este assunto seja um "Sub-capítulo".</p>
                     </div>
-                    <div className="space-y-2">
-                        <label className="block text-sm font-bold text-slate-700">Conteúdo (Texto para leitura)</label>
-                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                            <ReactQuill
-                                theme="snow"
-                                value={newTopic.content || ''}
-                                onChange={(content) => setNewTopic({ ...newTopic, content })}
-                                modules={modules}
-                                formats={formats}
-                                placeholder="Escreva ou cole o conteúdo aqui..."
-                                className="quill-editor"
-                            />
-                        </div>
-                    </div>
+
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Link Externo (URL)</label>
                         <input type="text" placeholder="https://..." className="w-full p-2 border rounded" value={newTopic.external_link} onChange={e => setNewTopic({ ...newTopic, external_link: e.target.value })} />
@@ -313,7 +307,7 @@ const Materias: React.FC = () => {
             </Modal>
 
             {/* Material Link Modal */}
-            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={editingMaterial ? "Editar Material" : `Adicionar Novo em ${newMaterial.category === 'questao' ? 'Exercícios' : newMaterial.category === 'mapa' ? 'Mapas Mentais' : 'Apostilas'}`}>
+            <Modal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} title={editingMaterial ? "Editar Material" : `Adicionar Novo em ${newMaterial.category === 'questao' ? 'Exercícios' : newMaterial.category === 'mapa' ? 'Mapas Mentais' : newMaterial.category === 'video' ? 'Vídeos' : 'Apostilas'}`}>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Título / Nome</label>
@@ -402,6 +396,7 @@ const Materias: React.FC = () => {
 
                         <div className="flex border-b overflow-x-auto whitespace-nowrap">
                             <TabButton active={activeTab === 'apostilas'} onClick={() => setActiveTab('apostilas')} icon="fa-book" label="Apostilas" />
+                            <TabButton active={activeTab === 'videos'} onClick={() => setActiveTab('videos')} icon="fa-video" label="Vídeos" />
                             <TabButton active={activeTab === 'questoes'} onClick={() => setActiveTab('questoes')} icon="fa-tasks" label="Exercícios" />
                             <TabButton active={activeTab === 'mapas'} onClick={() => setActiveTab('mapas')} icon="fa-project-diagram" label="Mapas Mentais" />
                         </div>
@@ -493,96 +488,85 @@ const Materias: React.FC = () => {
                                     <div className="lg:col-span-3 space-y-6">
                                         {selectedTopic ? (
                                             <div className="animate-fade-in space-y-6">
-                                                <div className="border-b pb-4">
-                                                    {selectedTopic.parent_id && (
-                                                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                                            <span>{topics.find(t => t.id === selectedTopic.parent_id)?.title}</span>
-                                                            <i className="fas fa-chevron-right text-[8px]"></i>
-                                                        </div>
-                                                    )}
-                                                    <h3 className="text-2xl font-bold text-sky-800 mb-2">{selectedTopic.title}</h3>
-                                                    {selectedTopic.content && (
-                                                        <div className="ql-snow">
-                                                            <div
-                                                                className="ql-editor text-slate-600 text-sm mb-4 !p-0"
-                                                                dangerouslySetInnerHTML={{ __html: selectedTopic.content }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    {!selectedTopic.parent_id && topics.some(t => t.parent_id === selectedTopic.id) && (
-                                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
-                                                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-2">Sub-assuntos neste capítulo:</h5>
-                                                            <div className="grid grid-cols-1 gap-2">
-                                                                {topics.filter(t => t.parent_id === selectedTopic.id).map(st => (
-                                                                    <button key={st.id} onClick={() => setSelectedTopic(st)} className="text-left py-1 text-sky-600 hover:underline text-sm flex items-center gap-2">
-                                                                        <i className="fas fa-book-open text-[10px]"></i> {st.title}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {selectedTopic.external_link && (
-                                                        <a href={selectedTopic.external_link} target="_blank" rel="noreferrer" className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-sky-200 inline-block transition-colors">
-                                                            <i className="fas fa-external-link-alt mr-1"></i> Baixar Texto
-                                                        </a>
-                                                    )}
-                                                </div>
+                                                {selectedTopic.parent_id && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                                        <span>{topics.find(t => t.id === selectedTopic.parent_id)?.title}</span>
+                                                        <i className="fas fa-chevron-right text-[8px]"></i>
+                                                    </div>
+                                                )}
+                                                <h3 className="text-2xl font-bold text-sky-800 mb-2">{selectedTopic.title}</h3>
 
-                                                {/* Files for this Topic */}
-                                                <div>
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <h4 className="font-bold text-slate-700 text-sm">Arquivos do Assunto</h4>
+                                                {/* Internal Viewer (Iframe) */}
+                                                {previewUrl ? (
+                                                    <div className="w-full h-[600px] bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shadow-inner">
+                                                        <iframe
+                                                            src={previewUrl}
+                                                            className="w-full h-full"
+                                                            title="Visualizador de Conteúdo"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-full h-[300px] flex flex-col items-center justify-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 text-slate-400">
+                                                        <i className="fas fa-eye-slash text-4xl mb-3 opacity-50"></i>
+                                                        <p>Selecione um material abaixo para visualizar</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="border-t pt-6">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h4 className="font-bold text-slate-700 text-sm">Materiais de Estudo (Apostilas)</h4>
                                                         {isAdmin && (
                                                             <button
                                                                 onClick={() => openMaterialModal('apostila')}
-                                                                className="text-xs font-bold text-sky-600 hover:underline"
+                                                                className="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-sky-700 shadow-sm flex items-center gap-1"
                                                             >
-                                                                + Adicionar Link
+                                                                <i className="fas fa-plus"></i> Adicionar
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        {materials.filter(m => m.topic_id === selectedTopic.id).map(m => (
-                                                            <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100 group/item">
-                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <div className={`w-8 h-8 rounded flex items-center justify-center text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        {materials.filter(m => m.topic_id === selectedTopic.id && m.category !== 'questao' && m.category !== 'mapa' && m.category !== 'video').map(m => (
+                                                            <div key={m.id} className="p-4 bg-white border border-slate-200 rounded-xl hover:border-sky-400 hover:shadow-md transition-all group flex flex-col justify-between h-full relative cursor-pointer" onClick={() => setPreviewUrl(m.url)}>
+                                                                {isAdmin && (
+                                                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded backdrop-blur-sm z-10">
+                                                                        <button onClick={(e) => { e.stopPropagation(); openMaterialModal('apostila', m); }} className="text-slate-400 hover:text-sky-500 p-1">
+                                                                            <i className="fas fa-edit"></i>
+                                                                        </button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteMaterial(m.id); }} className="text-slate-400 hover:text-red-500 p-1">
+                                                                            <i className="fas fa-trash"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="flex items-start gap-3 mb-3">
+                                                                    <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
                                                                         m.type === 'XLS' ? 'bg-emerald-500' :
-                                                                            'bg-red-500'
+                                                                            m.type === 'LINK' ? 'bg-slate-500' :
+                                                                                'bg-red-500'
                                                                         }`}>
                                                                         <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
                                                                             m.type === 'XLS' ? 'fa-file-excel' :
-                                                                                'fa-file-pdf'
-                                                                            } text-xs`}></i>
+                                                                                m.type === 'LINK' ? 'fa-link' :
+                                                                                    'fa-file-pdf'
+                                                                            } text-lg`}></i>
                                                                     </div>
-                                                                    <div className="flex flex-col overflow-hidden">
-                                                                        <span className="text-sm font-bold text-slate-700 truncate">{m.name}</span>
+                                                                    <div>
+                                                                        <h4 className="font-bold text-slate-800 text-sm line-clamp-2" title={m.name}>{m.name}</h4>
                                                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{m.type}</span>
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex gap-2">
-                                                                    <a href={m.url} target="_blank" rel="noreferrer" className="text-sky-600 hover:text-sky-700 text-xs font-bold flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-sky-100 shadow-sm transition-all hover:shadow">
-                                                                        <i className="fas fa-external-link-alt text-[10px]"></i> Acessar
-                                                                    </a>
-                                                                    {isAdmin && (
-                                                                        <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity items-center">
-                                                                            <button
-                                                                                onClick={() => openMaterialModal('apostila', m)}
-                                                                                className="text-slate-300 hover:text-sky-500 transition-colors p-1.5"
-                                                                            >
-                                                                                <i className="fas fa-edit"></i>
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => handleDeleteMaterial(m.id)}
-                                                                                className="text-slate-300 hover:text-red-500 transition-colors p-1.5"
-                                                                            >
-                                                                                <i className="fas fa-trash"></i>
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+
+                                                                <button className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100 mt-auto">
+                                                                    <i className="fas fa-eye mr-1"></i> Visualizar
+                                                                </button>
                                                             </div>
                                                         ))}
-                                                        {materials.filter(m => m.topic_id === selectedTopic.id).length === 0 && <p className="text-xs text-slate-400">Nenhum arquivo.</p>}
+                                                        {materials.filter(m => m.topic_id === selectedTopic.id && m.category !== 'questao' && m.category !== 'mapa' && m.category !== 'video').length === 0 && (
+                                                            <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                                                                <p className="text-slate-400 text-sm">Nenhum material adicionado neste tópico.</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -592,6 +576,53 @@ const Materias: React.FC = () => {
                                                 <p>Selecione um assunto para ver o conteúdo</p>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'videos' && (
+                                <div>
+                                    {isAdmin && (
+                                        <div className="mb-4">
+                                            <button onClick={() => openMaterialModal('video')} className="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 flex items-center gap-2">
+                                                <i className="fas fa-plus"></i> Novo Vídeo (Link)
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                        {materials.filter(m => m.category === 'video').map(m => (
+                                            <div key={m.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl hover:border-sky-500 transition-all relative flex flex-col justify-between group">
+                                                {isAdmin && (
+                                                    <div className="absolute top-2 right-2 flex gap-2 z-10">
+                                                        <button onClick={() => openMaterialModal('video', m)} className="text-slate-300 hover:text-sky-500">
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onClick={() => handleDeleteMaterial(m.id)} className="text-slate-300 hover:text-red-500">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div className="mb-4">
+                                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-white ${m.type === 'VIDEO' ? 'bg-amber-500' :
+                                                        m.type === 'XLS' ? 'bg-emerald-500' :
+                                                            'bg-sky-600'
+                                                        }`}>
+                                                        <i className={`fas ${m.type === 'VIDEO' ? 'fa-video' :
+                                                            m.type === 'XLS' ? 'fa-file-excel' :
+                                                                'fa-play-circle'
+                                                            } text-xl`}></i>
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-800 leading-tight">{m.name}</h4>
+                                                    <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-wider">{m.type}</p>
+                                                </div>
+
+                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100">
+                                                    <i className="fas fa-external-link-alt mr-1"></i> Acessar
+                                                </a>
+                                            </div>
+                                        ))}
+                                        {materials.filter(m => m.category === 'video').length === 0 && <p className="text-slate-400 text-sm">Nenhum vídeo cadastrado ainda.</p>}
                                     </div>
                                 </div>
                             )}
@@ -692,8 +723,9 @@ const Materias: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

@@ -17,7 +17,7 @@ export const FAQ: React.FC = () => {
             a: "Sim! Cobrimos as principais matérias que caem em 95% dos editais do Brasil (Administrativo, Constitucional, Português, RLM, etc), além de áreas específicas como Saúde, Educação e Direito."
         },
         {
-            q: "As apostilas estão atualizadas?",
+            q: "As apostilas em PDF estão atualizadas?",
             a: "Sim, todo o acervo foi revisado e atualizado em 2024 de acordo com as legislações vigentes e jurisprudências mais recentes."
         }
     ];

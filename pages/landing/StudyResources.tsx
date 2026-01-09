@@ -12,14 +12,14 @@ export const StudyResources: React.FC = () => {
         },
         {
             icon: <BookOpen className="h-7 w-7" />,
-            title: "Apostilas & Resumos",
-            desc: "Conteúdo digital denso e organizado. Tudo disponível para leitura online ou offline.",
+            title: "Apostilas em PDF",
+            desc: "Conteúdo denso e organizado em formato PDF. Tudo disponível para baixar e estudar onde quiser.",
             color: "bg-indigo-600"
         },
         {
             icon: <Download className="h-7 w-7" />,
             title: "Materiais Baixáveis",
-            desc: "Baixe PDFs de provas anteriores, exercícios e simulados para estudar onde quiser.",
+            desc: "Baixe PDFs de provas anteriores, exercícios e simulados para estudar offline.",
             color: "bg-emerald-600"
         },
         {
@@ -36,8 +36,8 @@ export const StudyResources: React.FC = () => {
         },
         {
             icon: <Target className="h-7 w-7" />,
-            title: "Banco de Questões",
-            desc: "Treine com milhares de questões reais. Filtre por banca, ano ou nível de dificuldade.",
+            title: "Questões em PDF",
+            desc: "Treine com milhares de questões reais organizadas em cadernos PDF por banca e ano.",
             color: "bg-rose-600"
         }
     ];
