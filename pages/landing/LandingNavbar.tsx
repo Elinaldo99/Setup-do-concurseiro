@@ -16,11 +16,23 @@ export const LandingNavbar: React.FC = () => {
 
     const navLinks = [
         { name: 'O Setup', href: '#vantagens' },
-        { name: 'Hub', href: '#recursos' },
+        { name: 'Recursos', href: '#recursos' },
+        { name: 'Conteúdo', href: '#materias' },
         { name: 'Cronogramas', href: '#cronogramas' },
         { name: 'Bônus', href: '#brindes' },
-        { name: 'Preço', href: '#preco' },
     ];
+
+    const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+        e.preventDefault();
+        const targetId = href.replace('#', '');
+        const elem = document.getElementById(targetId);
+        if (elem) {
+            elem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        }
+    };
 
     return (
         <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'}`}>
@@ -41,6 +53,7 @@ export const LandingNavbar: React.FC = () => {
                             <a
                                 key={link.name}
                                 href={link.href}
+                                onClick={(e) => scrollToSection(e, link.href)}
                                 className="text-slate-600 hover:text-sky-600 font-semibold transition-colors text-xs uppercase tracking-wider"
                             >
                                 {link.name}
@@ -48,6 +61,7 @@ export const LandingNavbar: React.FC = () => {
                         ))}
                         <a
                             href="#preco"
+                            onClick={(e) => scrollToSection(e, '#preco')}
                             className="bg-sky-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
                         >
                             GARANTIR ACESSO
@@ -77,7 +91,10 @@ export const LandingNavbar: React.FC = () => {
                             <a
                                 key={link.name}
                                 href={link.href}
-                                onClick={() => setIsMenuOpen(false)}
+                                onClick={(e) => {
+                                    scrollToSection(e, link.href);
+                                    setIsMenuOpen(false);
+                                }}
                                 className="text-slate-600 hover:text-sky-600 font-medium"
                             >
                                 {link.name}
@@ -85,7 +102,10 @@ export const LandingNavbar: React.FC = () => {
                         ))}
                         <a
                             href="#preco"
-                            onClick={() => setIsMenuOpen(false)}
+                            onClick={(e) => {
+                                scrollToSection(e, '#preco');
+                                setIsMenuOpen(false);
+                            }}
                             className="bg-sky-600 text-white px-6 py-3 rounded-xl font-bold text-center"
                         >
                             GARANTIR ACESSO

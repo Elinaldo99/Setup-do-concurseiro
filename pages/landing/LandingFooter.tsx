@@ -3,6 +3,18 @@ import React from 'react';
 import { GraduationCap, Instagram, Mail, MessageCircle } from 'lucide-react';
 
 export const LandingFooter: React.FC = () => {
+    const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+        e.preventDefault();
+        const targetId = href.replace('#', '');
+        const elem = document.getElementById(targetId);
+        if (elem) {
+            elem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        }
+    };
+
     return (
         <footer className="bg-slate-900 text-slate-400 py-16 border-t border-slate-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,10 +41,12 @@ export const LandingFooter: React.FC = () => {
                     <div>
                         <h4 className="text-white font-bold mb-6 text-lg">Navegação</h4>
                         <ul className="space-y-4">
-                            <li><a href="#vantagens" className="hover:text-sky-400 transition-colors">O Setup</a></li>
-                            <li><a href="#materias" className="hover:text-sky-400 transition-colors">Conteúdo</a></li>
-                            <li><a href="#depoimentos" className="hover:text-sky-400 transition-colors">Depoimentos</a></li>
-                            <li><a href="#preco" className="hover:text-sky-400 transition-colors">Garantir Acesso</a></li>
+                            <li><a href="#vantagens" onClick={(e) => scrollToSection(e, '#vantagens')} className="hover:text-sky-400 transition-colors">O Setup</a></li>
+                            <li><a href="#recursos" onClick={(e) => scrollToSection(e, '#recursos')} className="hover:text-sky-400 transition-colors">Recursos</a></li>
+                            <li><a href="#materias" onClick={(e) => scrollToSection(e, '#materias')} className="hover:text-sky-400 transition-colors">Matérias</a></li>
+                            <li><a href="#depoimentos" onClick={(e) => scrollToSection(e, '#depoimentos')} className="hover:text-sky-400 transition-colors">Depoimentos</a></li>
+                            <li><a href="#faq" onClick={(e) => scrollToSection(e, '#faq')} className="hover:text-sky-400 transition-colors">Dúvidas</a></li>
+                            <li><a href="#preco" onClick={(e) => scrollToSection(e, '#preco')} className="hover:text-sky-400 transition-colors">Garantir Acesso</a></li>
                         </ul>
                     </div>
 
