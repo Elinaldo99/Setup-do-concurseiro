@@ -527,7 +527,7 @@ const Materias: React.FC = () => {
 
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                         {materials.filter(m => m.topic_id === selectedTopic.id && m.category !== 'questao' && m.category !== 'mapa' && m.category !== 'video').map(m => (
-                                                            <div key={m.id} className="p-4 bg-white border border-slate-200 rounded-xl hover:border-sky-400 hover:shadow-md transition-all group flex flex-col justify-between h-full relative cursor-pointer" onClick={() => setPreviewUrl(m.url)}>
+                                                            <div key={m.id} className="p-4 bg-white border border-slate-200 rounded-xl hover:border-sky-400 hover:shadow-md transition-all group flex flex-col justify-between h-full relative">
                                                                 {isAdmin && (
                                                                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-1 rounded backdrop-blur-sm z-10">
                                                                         <button onClick={(e) => { e.stopPropagation(); openMaterialModal('apostila', m); }} className="text-slate-400 hover:text-sky-500 p-1">
@@ -557,9 +557,9 @@ const Materias: React.FC = () => {
                                                                     </div>
                                                                 </div>
 
-                                                                <button className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100 mt-auto">
-                                                                    <i className="fas fa-eye mr-1"></i> Visualizar
-                                                                </button>
+                                                                <a href={m.url} target="_blank" rel="noreferrer" className="w-full bg-slate-50 text-sky-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-sky-600 hover:text-white transition-all border border-slate-100 mt-auto">
+                                                                    <i className="fas fa-external-link-alt mr-1"></i> Acessar
+                                                                </a>
                                                             </div>
                                                         ))}
                                                         {materials.filter(m => m.topic_id === selectedTopic.id && m.category !== 'questao' && m.category !== 'mapa' && m.category !== 'video').length === 0 && (
