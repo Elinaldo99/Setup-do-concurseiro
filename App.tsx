@@ -11,31 +11,8 @@ import Dicas from './pages/Dicas';
 import Cronograma from './pages/Cronograma';
 import Perfil from './pages/Perfil';
 import Auth from './pages/Auth';
-
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><i className="fas fa-circle-notch animate-spin text-sky-600 text-3xl"></i></div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
-
-  return <>{children}</>;
-};
-
-const HomeRoute: React.FC = () => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><i className="fas fa-circle-notch animate-spin text-sky-600 text-3xl"></i></div>;
-  }
-
-  // Show landing page for non-authenticated users, Home for authenticated users
-  return user ? <Home /> : <LandingPage />;
-};
+import ProtectedRoute from './components/ProtectedRoute';
+import HomeRoute from './components/HomeRoute';
 
 const App: React.FC = () => {
   return (
@@ -83,6 +60,7 @@ const AppContent: React.FC = () => {
               <Perfil />
             </ProtectedRoute>
           } />
+
         </Routes>
       </main>
       {user && <Footer />}

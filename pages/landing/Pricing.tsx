@@ -78,15 +78,17 @@ export const Pricing: React.FC = () => {
                                 <p className="text-sky-100 font-bold text-lg mt-2">pago a cada 6 meses</p>
                             </div>
 
-                            <Link
-                                to="/auth"
+                            <a
+                                href="https://pay.kiwify.com.br/iIm4rTa"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="block w-full bg-white hover:bg-slate-50 text-sky-600 font-black py-5 rounded-2xl text-xl transition-all shadow-2xl transform hover:-translate-y-1 active:scale-95 group mb-8"
                             >
                                 <span className="flex items-center justify-center space-x-3">
                                     <span>QUERO MEU ACESSO AGORA</span>
                                     <Rocket className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                 </span>
-                            </Link>
+                            </a>
 
                             {/* Justificativa do Valor */}
                             <div className="bg-sky-700/30 backdrop-blur-sm p-5 rounded-2xl border border-white/10 text-left mb-8">

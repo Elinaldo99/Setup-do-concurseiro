@@ -6,6 +6,7 @@ interface AuthContextType {
     user: User | null;
     session: Session | null;
     loading: boolean;
+    hasAccess: boolean;
     signOut: () => Promise<void>;
 }
 
@@ -16,10 +17,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [hasAccess, setHasAccess] = useState(false);
+
+    const checkAccess = async (email: string | undefined) => {
+        if (!email) {
+            setHasAccess(false);
+            return;
+        }
+        const { data } = await supabase
+            .from('profiles')
+            .select('has_access')
+            .eq('email', email)
+            .single();
+
+        setHasAccess(data?.has_access ?? false);
+    };
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
+            checkAccess(session?.user?.email);
             setLoading(false);
         });
 
@@ -28,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
+            checkAccess(session?.user?.email);
             setLoading(false);
         });
 
@@ -36,12 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         await supabase.auth.signOut();
+        setHasAccess(false);
     };
 
     const value = {
         user,
         session,
         loading,
+        hasAccess,
         signOut,
     };
 
