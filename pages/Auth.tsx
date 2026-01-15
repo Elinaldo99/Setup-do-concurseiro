@@ -129,15 +129,13 @@ const Auth: React.FC = () => {
                     </form>
 
                     <div className="mt-8 text-center">
-                        <p className="text-slate-600 text-sm">
-                            {isSignUp ? 'Já tem uma conta?' : 'Ainda não tem conta?'}
-                            <button
-                                onClick={() => { setIsSignUp(!isSignUp); setMessage(null); }}
-                                className="text-sky-600 font-bold ml-1 hover:underline focus:outline-none"
-                            >
-                                {isSignUp ? 'Fazer Login' : 'Cadastre-se'}
-                            </button>
-                        </p>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="text-slate-500 hover:text-sky-600 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mx-auto"
+                        >
+                            <i className="fas fa-arrow-left"></i>
+                            Voltar para a Página Inicial
+                        </button>
                     </div>
                 </div>
                 <div className="bg-sky-50 p-4 text-center text-xs text-sky-700 font-bold">
