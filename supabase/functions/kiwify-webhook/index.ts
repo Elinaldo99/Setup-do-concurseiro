@@ -63,6 +63,23 @@ serve(async (req) => {
     if (isPaid) {
       console.log('💰 Pagamento aprovado!')
 
+      // Extrair e sanitizar CPF (agora feito antes de tudo para usar no profile e na criação de user)
+      let finalCpf: string | null = null
+      const rawCpf = customer?.cpf || customer?.CPF || customer?.doc || customer?.document
+      console.log('Dados do cliente para CPF:', JSON.stringify(customer)) // Log para debug
+
+      if (rawCpf) {
+        const sanitizedCpf = rawCpf.replace(/\D/g, '')
+        if (sanitizedCpf.length > 0) {
+          finalCpf = sanitizedCpf
+          console.log('✅ CPF identificado e sanitizado:', finalCpf)
+        } else {
+          console.log('⚠️ CPF encontrado mas vazio após sanitização:', rawCpf)
+        }
+      } else {
+        console.log('⚠️ CPF não encontrado no payload do cliente. Chaves disponíveis:', Object.keys(customer || {}))
+      }
+
       // Criar ou obter usuário no Auth
       const { data: users } = await supabase.auth.admin.listUsers()
       const existingUser = users?.users?.find(u => u.email === email)
@@ -70,9 +87,16 @@ serve(async (req) => {
 
       if (!existingUser) {
         console.log('Criando usuário...')
+
+        // Define senha: usa CPF se existir, senão gera aleatória
+        let password = finalCpf || generateRandomPassword()
+        if (finalCpf) {
+          console.log('Usando CPF como senha inicial')
+        }
+
         const { data: newUser, error: authError } = await supabase.auth.admin.createUser({
           email,
-          password: generateRandomPassword(),
+          password: password,
           email_confirm: true,
           user_metadata: { full_name: fullName }
         })
@@ -90,6 +114,21 @@ serve(async (req) => {
         }
       } else {
         console.log('Usuário já existe no Auth, usando ID existente.')
+
+        // Se temos CPF, atualizamos a senha para garantir que o usuário consiga logar
+        if (finalCpf && existingUser.id) {
+          console.log('Atualizando senha de usuário existente para CPF...')
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            existingUser.id,
+            { password: finalCpf }
+          )
+
+          if (updateError) {
+            console.error('❌ Erro ao atualizar senha:', updateError)
+          } else {
+            console.log('✅ Senha atualizada para o CPF.')
+          }
+        }
       }
 
       if (!userId) {
@@ -104,6 +143,7 @@ serve(async (req) => {
           id: userId,
           email,
           full_name: fullName,
+          cpf: finalCpf, // Salvando o CPF no perfil
           has_access: true,
           updated_at: new Date().toISOString()
         }, {
