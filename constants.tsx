@@ -129,10 +129,38 @@ export const SUBJECTS: Subject[] = [
     topics: []
   },
   {
+    id: 'esp',
+    name: 'Espanhol',
+    icon: 'fa-language',
+    description: 'Gramática e interpretação de textos em espanhol.',
+    topics: []
+  },
+  {
     id: 'estatistica',
     name: 'Estatística',
     icon: 'fa-chart-simple',
     description: 'Estatística descritiva e inferencial.',
+    topics: []
+  },
+  {
+    id: 'fisica',
+    name: 'Física',
+    icon: 'fa-atom',
+    description: 'Mecânica, termodinâmica e eletromagnetismo.',
+    topics: []
+  },
+  {
+    id: 'geo',
+    name: 'Geografia',
+    icon: 'fa-earth-americas',
+    description: 'Geografia geral, do Brasil e geopolítica.',
+    topics: []
+  },
+  {
+    id: 'hist',
+    name: 'História',
+    icon: 'fa-monument',
+    description: 'História geral e do Brasil.',
     topics: []
   },
   {
@@ -147,6 +175,13 @@ export const SUBJECTS: Subject[] = [
     name: 'Inglês',
     icon: 'fa-language',
     description: 'Compreensão de textos e gramática inglesa.',
+    topics: []
+  },
+  {
+    id: 'leis-ext',
+    name: 'Leis Extravagantes',
+    icon: 'fa-scale-balanced',
+    description: 'Legislação penal especial e leis complementares.',
     topics: []
   },
   {
@@ -169,6 +204,13 @@ export const SUBJECTS: Subject[] = [
     icon: 'fa-book-open',
     description: 'Gramática, interpretação de texto e redação oficial.',
     topics: ['Sintaxe', 'Morfologia', 'Pontuação', 'Acentuação', 'Concordância']
+  },
+  {
+    id: 'quimica',
+    name: 'Química',
+    icon: 'fa-flask',
+    description: 'Química geral, orgânica e inorgânica.',
+    topics: []
   },
   {
     id: 'rlm',

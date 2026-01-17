@@ -99,6 +99,32 @@ const Materias: React.FC = () => {
         }
     }, [selectedTopic]);
 
+    // Auto-seed subjects if missing
+    useEffect(() => {
+        const seedSubjects = async () => {
+            const defaultSubjects = [
+                { name: 'Espanhol', icon: 'fa-language', description: 'Gramática e interpretação de textos em espanhol.' },
+                { name: 'Física', icon: 'fa-atom', description: 'Mecânica, termodinâmica e eletromagnetismo.' },
+                { name: 'Geografia', icon: 'fa-earth-americas', description: 'Geografia geral, do Brasil e geopolítica.' },
+                { name: 'História', icon: 'fa-monument', description: 'História geral e do Brasil.' },
+                { name: 'Leis Extravagantes', icon: 'fa-scale-balanced', description: 'Legislação penal especial e leis complementares.' },
+                { name: 'Química', icon: 'fa-flask', description: 'Química geral, orgânica e inorgânica.' }
+            ];
+
+            const { data } = await supabase.from('subjects').select('name');
+            if (data) {
+                const existingNames = data.map(s => s.name.toLowerCase());
+                const toInsert = defaultSubjects.filter(s => !existingNames.includes(s.name.toLowerCase()));
+
+                if (toInsert.length > 0) {
+                    await supabase.from('subjects').insert(toInsert);
+                    fetchSubjects();
+                }
+            }
+        };
+        seedSubjects();
+    }, [subjects]); // Run when subjects list is loaded initially
+
     const fetchSubjects = async () => {
         const { data, error } = await supabase.from('subjects').select('*').order('name');
         if (data) setSubjects(data);
