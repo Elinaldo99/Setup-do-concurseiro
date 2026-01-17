@@ -11,6 +11,7 @@ import Dicas from './pages/Dicas';
 import Cronograma from './pages/Cronograma';
 import Perfil from './pages/Perfil';
 import Auth from './pages/Auth';
+import ThankYou from './pages/ThankYou';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRoute from './components/HomeRoute';
 
@@ -61,6 +62,7 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           } />
 
+          <Route path="/agradecimento" element={<ThankYou />} />
         </Routes>
       </main>
       {user && <Footer />}
