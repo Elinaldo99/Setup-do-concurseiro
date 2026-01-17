@@ -36,6 +36,7 @@ const Navbar: React.FC = () => {
                             <>
                                 <Link to="/materias" className={`px-1 pt-1 text-sm font-semibold transition-all h-full flex items-center ${isActive('/materias')}`}>Matérias</Link>
                                 <Link to="/concursos" className={`px-1 pt-1 text-sm font-semibold transition-all h-full flex items-center ${isActive('/concursos')}`}>Concursos</Link>
+                                <Link to="/simulados" className={`px-1 pt-1 text-sm font-semibold transition-all h-full flex items-center ${isActive('/simulados')}`}>Simulados</Link>
                                 <Link to="/dicas" className={`px-1 pt-1 text-sm font-semibold transition-all h-full flex items-center ${isActive('/dicas')}`}>Dicas</Link>
                                 <Link to="/cronograma" className={`px-1 pt-1 text-sm font-semibold transition-all h-full flex items-center ${isActive('/cronograma')}`}>Cronogramas</Link>
                                 <Link to="/perfil" className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${location.pathname === '/perfil' ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'}`}>
@@ -75,6 +76,9 @@ const Navbar: React.FC = () => {
                             </Link>
                             <Link to="/concursos" className={`block px-4 py-3 rounded-xl text-base font-semibold ${location.pathname === '/concursos' ? 'bg-sky-50 text-sky-600' : 'text-slate-600'}`}>
                                 <i className="fas fa-file-signature mr-3"></i>Concursos
+                            </Link>
+                            <Link to="/simulados" className={`block px-4 py-3 rounded-xl text-base font-semibold ${location.pathname === '/simulados' ? 'bg-sky-50 text-sky-600' : 'text-slate-600'}`}>
+                                <i className="fas fa-laptop-code mr-3"></i>Simulados
                             </Link>
                             <Link to="/dicas" className={`block px-4 py-3 rounded-xl text-base font-semibold ${location.pathname === '/dicas' ? 'bg-sky-50 text-sky-600' : 'text-slate-600'}`}>
                                 <i className="fas fa-magic mr-3"></i>Dicas

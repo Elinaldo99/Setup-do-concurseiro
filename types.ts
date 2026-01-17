@@ -46,3 +46,11 @@ export interface Achievement {
   icon: string;
   unlocked: boolean;
 }
+
+export interface Simulado {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  created_at?: string;
+}

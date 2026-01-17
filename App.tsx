@@ -12,6 +12,7 @@ import Cronograma from './pages/Cronograma';
 import Perfil from './pages/Perfil';
 import Auth from './pages/Auth';
 import ThankYou from './pages/ThankYou';
+import Simulados from './pages/Simulados';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRoute from './components/HomeRoute';
 
@@ -44,6 +45,11 @@ const AppContent: React.FC = () => {
           <Route path="/concursos" element={
             <ProtectedRoute>
               <Concursos />
+            </ProtectedRoute>
+          } />
+          <Route path="/simulados" element={
+            <ProtectedRoute>
+              <Simulados />
             </ProtectedRoute>
           } />
           <Route path="/dicas" element={
