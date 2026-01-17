@@ -43,44 +43,54 @@ const Perfil: React.FC = () => {
 
     const fetchUserProfile = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+            if (authError || !authUser) {
                 navigate('/auth');
                 return;
             }
-            setUser(user);
+            setUser(authUser);
 
             // Fetch or create profile
-            let { data: profile, error } = await supabase
+            const { data: existingProfile, error: fetchError } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('id', user.id)
+                .eq('id', authUser.id)
                 .single();
 
-            if (error && error.code === 'PGRST116') {
-                // Profile doesn't exist, create it
+            let finalProfile = existingProfile;
+
+            if (fetchError && fetchError.code === 'PGRST116') {
+                console.log('Perfil não encontrado, criando padrão...');
                 const newProfile = {
-                    id: user.id,
-                    full_name: user.user_metadata?.full_name || 'Concurseiro',
+                    id: authUser.id,
+                    full_name: authUser.user_metadata?.full_name || 'Concurseiro',
                     bio: 'Em busca da vaga dos sonhos',
                     avatar_url: null
                 };
-                const { data, error: insertError } = await supabase
+                const { data: createdProfile, error: insertError } = await supabase
                     .from('profiles')
                     .insert([newProfile])
                     .select()
                     .single();
 
-                if (!insertError) profile = data;
+                if (insertError) {
+                    console.error('Erro ao criar perfil:', insertError);
+                } else {
+                    finalProfile = createdProfile;
+                }
+            } else if (fetchError) {
+                console.error('Erro ao buscar perfil:', fetchError);
             }
 
-            setProfile(profile);
-            setEditForm({
-                full_name: profile?.full_name || '',
-                bio: profile?.bio || ''
-            });
+            if (finalProfile) {
+                setProfile(finalProfile);
+                setEditForm({
+                    full_name: finalProfile.full_name || '',
+                    bio: finalProfile.bio || ''
+                });
+            }
         } catch (error) {
-            console.error('Error fetching profile:', error);
+            console.error('Erro inesperado no perfil:', error);
         } finally {
             setLoading(false);
         }
@@ -138,13 +148,16 @@ const Perfil: React.FC = () => {
 
     const handleSaveProfile = async () => {
         if (!user) return;
+        setLoading(true);
 
         try {
+            console.log('Salvando perfil para:', user.id, editForm);
             const { error } = await supabase
                 .from('profiles')
                 .update({
                     full_name: editForm.full_name,
-                    bio: editForm.bio
+                    bio: editForm.bio,
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', user.id);
 
@@ -152,9 +165,12 @@ const Perfil: React.FC = () => {
 
             setProfile(prev => prev ? { ...prev, ...editForm } : null);
             setIsEditing(false);
-            setMessage({ type: 'success', text: 'Perfil atualizado!' });
+            setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.message || 'Erro ao salvar' });
+            console.error('Erro ao salvar perfil:', error);
+            setMessage({ type: 'error', text: `Erro ao salvar: ${error.message || 'Erro desconhecido'}` });
+        } finally {
+            setLoading(false);
         }
     };
 

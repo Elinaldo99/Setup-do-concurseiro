@@ -63,11 +63,12 @@ serve(async (req) => {
     if (isPaid) {
       console.log('💰 Pagamento aprovado!')
 
-      // Criar usuário no Auth
+      // Criar ou obter usuário no Auth
       const { data: users } = await supabase.auth.admin.listUsers()
-      const userExists = users?.users?.some(u => u.email === email)
+      const existingUser = users?.users?.find(u => u.email === email)
+      let userId = existingUser?.id
 
-      if (!userExists) {
+      if (!existingUser) {
         console.log('Criando usuário...')
         const { data: newUser, error: authError } = await supabase.auth.admin.createUser({
           email,
@@ -78,16 +79,29 @@ serve(async (req) => {
 
         if (authError) {
           console.error('Erro ao criar usuário:', authError)
+          // Se falhou ao criar mas o usuário já existe no Auth (raro se listUsers funcionou), tentamos recuperar
+          if (authError.message.includes('already registered')) {
+            const { data: retryUsers } = await supabase.auth.admin.listUsers()
+            userId = retryUsers?.users?.find(u => u.email === email)?.id
+          }
         } else {
           console.log('✅ Usuário criado!')
+          userId = newUser.user.id
         }
+      } else {
+        console.log('Usuário já existe no Auth, usando ID existente.')
+      }
+
+      if (!userId) {
+        throw new Error('Não foi possível obter o ID do usuário para o perfil.')
       }
 
       // Criar/atualizar perfil
-      console.log('Criando perfil...')
+      console.log('Criando/atualizando perfil para ID:', userId)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .upsert({
+          id: userId,
           email,
           full_name: fullName,
           has_access: true,
@@ -105,7 +119,7 @@ serve(async (req) => {
         )
       }
 
-      console.log('✅ Perfil criado:', profile)
+      console.log('✅ Perfil processado:', profile)
 
       // Registrar compra
       await supabase.from('purchases').insert({
