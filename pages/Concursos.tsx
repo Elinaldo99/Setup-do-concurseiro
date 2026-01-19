@@ -37,6 +37,11 @@ const Concursos: React.FC = () => {
     const [isEditBlockModalOpen, setIsEditBlockModalOpen] = useState(false);
     const [editingBlock, setEditingBlock] = useState<{ institution: string; uf: string; originalInstitution: string; originalUf: string } | null>(null);
 
+    // Viewer State
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
+    const [viewerUrl, setViewerUrl] = useState('');
+    const [viewerTitle, setViewerTitle] = useState('');
+
     // State for creating a new Block (Institution/UF)
     const [newBlock, setNewBlock] = useState({
         institution: '',
@@ -259,6 +264,12 @@ const Concursos: React.FC = () => {
         if (!confirm('Excluir documento?')) return;
         await supabase.from('exam_documents').delete().eq('id', docId);
         fetchDocuments();
+    };
+
+    const openViewer = (doc: ExamDocument) => {
+        setViewerUrl(doc.url);
+        setViewerTitle(doc.name);
+        setIsViewerOpen(true);
     };
 
     const filteredExams = exams.filter(e => {
@@ -581,9 +592,12 @@ const Concursos: React.FC = () => {
                                                 <i className={`fas ${doc.type === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-word text-blue-500'} text-4xl`}></i>
                                             </div>
                                             <h4 className="font-black text-slate-800 mb-4">{doc.name}</h4>
-                                            <a href={doc.url} target="_blank" rel="noreferrer" className="w-full py-3 bg-white border-2 border-slate-200 text-sky-600 rounded-xl font-black text-center block group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all">
-                                                <i className="fas fa-download mr-2"></i> Baixar {doc.type}
-                                            </a>
+                                            <button
+                                                onClick={() => openViewer(doc)}
+                                                className="w-full py-3 bg-white border-2 border-slate-200 text-sky-600 rounded-xl font-black text-center block group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all"
+                                            >
+                                                <i className="fas fa-eye mr-2"></i> Visualizar {doc.type}
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -592,6 +606,31 @@ const Concursos: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Document Viewer Modal */}
+            <Modal
+                isOpen={isViewerOpen}
+                onClose={() => setIsViewerOpen(false)}
+                title={viewerTitle}
+                maxWidth="max-w-6xl"
+            >
+                <div className="w-full h-[70vh]">
+                    <iframe
+                        src={viewerUrl}
+                        className="w-full h-full rounded-xl border-0"
+                        title={viewerTitle}
+                    ></iframe>
+                </div>
+                <div className="mt-4 flex justify-end">
+                    <a
+                        href={viewerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sky-600 font-bold hover:underline flex items-center gap-2"
+                    >
+                        <i className="fas fa-external-link-alt"></i> Abrir em nova aba
+                    </a>
+                </div>
+            </Modal>
         </div>
     );
 };
