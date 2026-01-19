@@ -34,6 +34,8 @@ const Concursos: React.FC = () => {
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [selectedExamForDoc, setSelectedExamForDoc] = useState<string | null>(null);
     const [editingExam, setEditingExam] = useState<Exam | null>(null);
+    const [isEditBlockModalOpen, setIsEditBlockModalOpen] = useState(false);
+    const [editingBlock, setEditingBlock] = useState<{ institution: string; uf: string; originalInstitution: string; originalUf: string } | null>(null);
 
     // State for creating a new Block (Institution/UF)
     const [newBlock, setNewBlock] = useState({
@@ -170,6 +172,55 @@ const Concursos: React.FC = () => {
     const openDocModal = (examId: string) => {
         setSelectedExamForDoc(examId);
         setIsDocModalOpen(true);
+    };
+
+    const handleDeleteBlock = async (institution: string, uf: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm(`Tem certeza? Isso apagará a instituição "${institution} - ${uf}" e todas as provas vinculadas a ela.`)) return;
+
+        const { error } = await supabase
+            .from('exams')
+            .delete()
+            .eq('institution', institution)
+            .eq('uf', uf);
+
+        if (error) {
+            alert('Erro ao excluir instituição');
+        } else {
+            fetchExams();
+        }
+    };
+
+    const openEditBlockModal = (group: { institution: string; uf: string }, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingBlock({
+            institution: group.institution,
+            uf: group.uf,
+            originalInstitution: group.institution,
+            originalUf: group.uf
+        });
+        setIsEditBlockModalOpen(true);
+    };
+
+    const handleUpdateBlock = async () => {
+        if (!editingBlock) return;
+
+        const { error } = await supabase
+            .from('exams')
+            .update({
+                institution: editingBlock.institution,
+                uf: editingBlock.uf
+            })
+            .eq('institution', editingBlock.originalInstitution)
+            .eq('uf', editingBlock.originalUf);
+
+        if (error) {
+            alert('Erro ao atualizar instituição');
+        } else {
+            setIsEditBlockModalOpen(false);
+            setEditingBlock(null);
+            fetchExams();
+        }
     };
 
     const handleAddDocument = async () => {
@@ -309,6 +360,29 @@ const Concursos: React.FC = () => {
                 )}
             </Modal>
 
+            {/* Edit Block Modal */}
+            <Modal isOpen={isEditBlockModalOpen} onClose={() => { setIsEditBlockModalOpen(false); setEditingBlock(null); }} title="Editar Instituição">
+                {editingBlock && (
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            className="w-full p-3 border rounded-xl"
+                            placeholder="Instituição"
+                            value={editingBlock.institution}
+                            onChange={e => setEditingBlock({ ...editingBlock, institution: e.target.value })}
+                        />
+                        <input
+                            type="text"
+                            placeholder="UF"
+                            className="w-full p-3 border rounded-xl"
+                            value={editingBlock.uf}
+                            onChange={e => setEditingBlock({ ...editingBlock, uf: e.target.value.toUpperCase() })}
+                        />
+                        <button onClick={handleUpdateBlock} className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold">Salvar Alterações</button>
+                    </div>
+                )}
+            </Modal>
+
             {/* Document Modal */}
             <Modal isOpen={isDocModalOpen} onClose={() => { setIsDocModalOpen(false); setSelectedExamForDoc(null); }} title="Adicionar Documento">
                 <div className="space-y-4">
@@ -378,6 +452,12 @@ const Concursos: React.FC = () => {
                                 onClick={() => setSelectedGroup(group)}
                                 className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-sky-400 hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden h-48 flex flex-col justify-between"
                             >
+                                {isAdmin && (
+                                    <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={(e) => openEditBlockModal(group, e)} className="p-2 text-sky-400 hover:text-sky-600"><i className="fas fa-edit"></i></button>
+                                        <button onClick={(e) => handleDeleteBlock(group.institution, group.uf, e)} className="p-2 text-red-300 hover:text-red-500"><i className="fas fa-trash"></i></button>
+                                    </div>
+                                )}
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <i className="fas fa-university text-7xl text-sky-900"></i>
                                 </div>
