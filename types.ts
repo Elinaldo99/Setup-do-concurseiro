@@ -14,6 +14,7 @@ export interface Exam {
   year: number;
   level: 'Fundamental' | 'Médio' | 'Superior';
   status: 'Aberto' | 'Finalizado' | 'Previsto';
+  uf?: string;
 }
 
 export interface Tip {

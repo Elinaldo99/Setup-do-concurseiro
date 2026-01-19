@@ -20,21 +20,35 @@ const Concursos: React.FC = () => {
     const [filter, setFilter] = useState('');
     const [levelFilter, setLevelFilter] = useState('Todos');
     const [roleFilter, setRoleFilter] = useState('Todos');
+    const [ufFilter, setUfFilter] = useState('Todos');
+    const [yearFilter, setYearFilter] = useState('Todos');
+
+    // Navigation State
+    const [selectedGroup, setSelectedGroup] = useState<{ institution: string; uf: string } | null>(null);
     const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
 
     // Admin State
-    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+    const [isExamDetailModalOpen, setIsExamDetailModalOpen] = useState(false);
     const [isEditExamModalOpen, setIsEditExamModalOpen] = useState(false);
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [selectedExamForDoc, setSelectedExamForDoc] = useState<string | null>(null);
     const [editingExam, setEditingExam] = useState<Exam | null>(null);
-    const [newExam, setNewExam] = useState<Partial<Exam>>({
+
+    // State for creating a new Block (Institution/UF)
+    const [newBlock, setNewBlock] = useState({
         institution: '',
+        uf: ''
+    });
+
+    // State for adding a specific Exam (Role/Year/Level)
+    const [newExamDetail, setNewExamDetail] = useState<Partial<Exam>>({
         role: '',
         year: new Date().getFullYear(),
         level: 'Médio',
         status: 'Aberto'
     });
+
     const [newDoc, setNewDoc] = useState({
         name: '',
         type: 'PDF',
@@ -59,27 +73,52 @@ const Concursos: React.FC = () => {
 
     const fetchDocuments = async () => {
         if (!selectedExam) return;
-
-        const relevantExamIds = exams.filter(e => e.institution === selectedExam.institution).map(e => e.id);
-
-        if (relevantExamIds.length > 0) {
-            const { data } = await supabase.from('exam_documents').select('*').in('exam_id', relevantExamIds);
-            if (data) setDocuments(data);
-        } else {
-            setDocuments([]);
-        }
+        const { data } = await supabase.from('exam_documents').select('*').eq('exam_id', selectedExam.id);
+        if (data) setDocuments(data);
     };
 
-    const handleAddExam = async () => {
-        if (!newExam.institution || !newExam.role) return;
+    const handleCreateBlock = async () => {
+        if (!newBlock.institution || !newBlock.uf) {
+            alert('Preencha Instituição e UF');
+            return;
+        }
 
-        const { error } = await supabase.from('exams').insert([newExam]);
+        // Create a record with placeholder role/year to make the block exist
+        const { error } = await supabase.from('exams').insert([{
+            institution: newBlock.institution,
+            uf: newBlock.uf,
+            role: 'Cadastrar Cargo',
+            year: new Date().getFullYear(),
+            level: 'Médio',
+            status: 'Previsto'
+        }]);
+
         if (error) {
             alert('Erro ao criar concurso');
         } else {
-            setIsExamModalOpen(false);
-            setNewExam({
-                institution: '',
+            setIsBlockModalOpen(false);
+            setNewBlock({ institution: '', uf: '' });
+            fetchExams();
+        }
+    };
+
+    const handleAddExamDetail = async () => {
+        if (!selectedGroup || !newExamDetail.role) {
+            alert('Preencha o cargo');
+            return;
+        }
+
+        const { error } = await supabase.from('exams').insert([{
+            ...newExamDetail,
+            institution: selectedGroup.institution,
+            uf: selectedGroup.uf
+        }]);
+
+        if (error) {
+            alert('Erro ao adicionar cargo');
+        } else {
+            setIsExamDetailModalOpen(false);
+            setNewExamDetail({
                 role: '',
                 year: new Date().getFullYear(),
                 level: 'Médio',
@@ -92,7 +131,6 @@ const Concursos: React.FC = () => {
     const handleDeleteExam = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!confirm('Tem certeza? Isso apagará também os documentos associados.')) return;
-
         const { error } = await supabase.from('exams').delete().eq('id', id);
         if (!error) {
             fetchExams();
@@ -108,7 +146,6 @@ const Concursos: React.FC = () => {
 
     const handleUpdateExam = async () => {
         if (!editingExam) return;
-
         const { error } = await supabase
             .from('exams')
             .update({
@@ -116,7 +153,8 @@ const Concursos: React.FC = () => {
                 role: editingExam.role,
                 year: editingExam.year,
                 level: editingExam.level,
-                status: editingExam.status
+                status: editingExam.status,
+                uf: editingExam.uf
             })
             .eq('id', editingExam.id);
 
@@ -139,15 +177,6 @@ const Concursos: React.FC = () => {
             alert('Preencha todos os campos');
             return;
         }
-
-        // Validate URL
-        try {
-            new URL(newDoc.link);
-        } catch {
-            alert('Link inválido. Use um URL completo (ex: https://...)');
-            return;
-        }
-
         setUploading(true);
         try {
             const { error } = await supabase.from('exam_documents').insert({
@@ -156,9 +185,7 @@ const Concursos: React.FC = () => {
                 type: newDoc.type,
                 url: newDoc.link
             });
-
             if (error) throw error;
-
             setIsDocModalOpen(false);
             setNewDoc({ name: '', type: 'PDF', link: '' });
             setSelectedExamForDoc(null);
@@ -177,370 +204,311 @@ const Concursos: React.FC = () => {
         fetchDocuments();
     };
 
-    const uniqueRoles = Array.from(new Set(exams.map(e => e.role)));
-
     const filteredExams = exams.filter(e => {
         const matchesSearch = e.institution.toLowerCase().includes(filter.toLowerCase()) ||
             e.role.toLowerCase().includes(filter.toLowerCase());
         const matchesLevel = levelFilter === 'Todos' || e.level === levelFilter;
         const matchesRole = roleFilter === 'Todos' || e.role === roleFilter;
-        return matchesSearch && matchesLevel && matchesRole;
+        const matchesUf = ufFilter === 'Todos' || (e.uf || 'Nacional') === ufFilter;
+        const matchesYear = yearFilter === 'Todos' || e.year.toString() === yearFilter;
+        return matchesSearch && matchesLevel && matchesRole && matchesUf && matchesYear;
     });
 
-    const institutionExams = selectedExam ? exams.filter(e => e.institution === selectedExam.institution) : [];
-    const yearsAvailable = Array.from(new Set(institutionExams.map(e => e.year))).sort((a, b) => b - a);
+    // Grouping for the Card View
+    const uniqueGroups = Array.from(new Set(filteredExams.map(e => JSON.stringify({ institution: e.institution, uf: e.uf || 'Nacional' }))))
+        .map(s => JSON.parse(s) as { institution: string; uf: string });
+
+    const examsInGroup = selectedGroup ? filteredExams.filter(e => e.institution === selectedGroup.institution && (e.uf || 'Nacional') === selectedGroup.uf) : [];
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Exam Modal */}
-            <Modal isOpen={isExamModalOpen} onClose={() => setIsExamModalOpen(false)} title="Novo Concurso">
+            {/* Global Block Modal (Institution + UF) */}
+            <Modal isOpen={isBlockModalOpen} onClose={() => setIsBlockModalOpen(false)} title="Novo Concurso">
                 <div className="space-y-4">
-                    <input type="text" placeholder="Instituição (ex: INSS)" className="w-full p-2 border rounded" value={newExam.institution} onChange={e => setNewExam({ ...newExam, institution: e.target.value })} />
-                    <input type="text" placeholder="Cargo" className="w-full p-2 border rounded" value={newExam.role} onChange={e => setNewExam({ ...newExam, role: e.target.value })} />
+                    <input
+                        type="text"
+                        placeholder="Instituição (ex: INSS)"
+                        className="w-full p-2 border rounded-xl"
+                        value={newBlock.institution}
+                        onChange={e => setNewBlock({ ...newBlock, institution: e.target.value })}
+                    />
+                    <input
+                        type="text"
+                        placeholder="UF (ex: SP, RJ ou Nacional)"
+                        className="w-full p-2 border rounded-xl"
+                        value={newBlock.uf}
+                        onChange={e => setNewBlock({ ...newBlock, uf: e.target.value.toUpperCase() })}
+                    />
+                    <button onClick={handleCreateBlock} className="w-full bg-sky-600 text-white p-3 rounded-xl font-bold">Salvar</button>
+                </div>
+            </Modal>
+
+            {/* Internal Exam Detail Modal (Role + Year + Level) */}
+            <Modal isOpen={isExamDetailModalOpen} onClose={() => setIsExamDetailModalOpen(false)} title={`Adicionar Prova - ${selectedGroup?.institution}`}>
+                <div className="space-y-4">
+                    <input
+                        type="text"
+                        placeholder="Cargo (ex: Agente, Perito)"
+                        className="w-full p-2 border rounded-xl"
+                        value={newExamDetail.role}
+                        onChange={e => setNewExamDetail({ ...newExamDetail, role: e.target.value })}
+                    />
                     <div className="flex gap-2">
-                        <input type="number" placeholder="Ano" className="w-full p-2 border rounded" value={newExam.year} onChange={e => setNewExam({ ...newExam, year: parseInt(e.target.value) })} />
-                        <select className="p-2 border rounded" value={newExam.level} onChange={e => setNewExam({ ...newExam, level: e.target.value as any })}>
+                        <input
+                            type="number"
+                            placeholder="Ano"
+                            className="w-full p-2 border rounded-xl"
+                            value={newExamDetail.year}
+                            onChange={e => setNewExamDetail({ ...newExamDetail, year: parseInt(e.target.value) })}
+                        />
+                        <select
+                            className="p-2 border rounded-xl"
+                            value={newExamDetail.level}
+                            onChange={e => setNewExamDetail({ ...newExamDetail, level: e.target.value as any })}
+                        >
                             <option value="Fundamental">Fundamental</option>
                             <option value="Médio">Médio</option>
                             <option value="Superior">Superior</option>
                         </select>
                     </div>
-                    <select className="w-full p-2 border rounded" value={newExam.status} onChange={e => setNewExam({ ...newExam, status: e.target.value as any })}>
+                    <select
+                        className="w-full p-2 border rounded-xl"
+                        value={newExamDetail.status}
+                        onChange={e => setNewExamDetail({ ...newExamDetail, status: e.target.value as any })}
+                    >
                         <option value="Aberto">Aberto</option>
                         <option value="Finalizado">Finalizado</option>
                         <option value="Previsto">Previsto</option>
                     </select>
-                    <button onClick={handleAddExam} className="w-full bg-sky-600 text-white p-3 rounded font-bold">Salvar</button>
+                    <button onClick={handleAddExamDetail} className="w-full bg-sky-600 text-white p-3 rounded-xl font-bold">Salvar</button>
                 </div>
             </Modal>
 
             {/* Edit Exam Modal */}
-            <Modal isOpen={isEditExamModalOpen} onClose={() => { setIsEditExamModalOpen(false); setEditingExam(null); }} title="Editar Concurso">
+            <Modal isOpen={isEditExamModalOpen} onClose={() => { setIsEditExamModalOpen(false); setEditingExam(null); }} title="Editar Cargo">
                 {editingExam && (
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Instituição</label>
-                            <input
-                                type="text"
-                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                                value={editingExam.institution}
-                                onChange={e => setEditingExam({ ...editingExam, institution: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Cargo</label>
-                            <input
-                                type="text"
-                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                                value={editingExam.role}
-                                onChange={e => setEditingExam({ ...editingExam, role: e.target.value })}
-                            />
-                        </div>
+                        <input type="text" className="w-full p-3 border rounded-xl" value={editingExam.institution} onChange={e => setEditingExam({ ...editingExam, institution: e.target.value })} />
+                        <input type="text" placeholder="UF" className="w-full p-3 border rounded-xl" value={editingExam.uf || ''} onChange={e => setEditingExam({ ...editingExam, uf: e.target.value.toUpperCase() })} />
+                        <input type="text" className="w-full p-3 border rounded-xl" value={editingExam.role} onChange={e => setEditingExam({ ...editingExam, role: e.target.value })} />
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Ano</label>
-                                <input
-                                    type="number"
-                                    className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                                    value={editingExam.year}
-                                    onChange={e => setEditingExam({ ...editingExam, year: parseInt(e.target.value) })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Nível</label>
-                                <select
-                                    className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                                    value={editingExam.level}
-                                    onChange={e => setEditingExam({ ...editingExam, level: e.target.value as any })}
-                                >
-                                    <option value="Fundamental">Fundamental</option>
-                                    <option value="Médio">Médio</option>
-                                    <option value="Superior">Superior</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
-                            <select
-                                className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                                value={editingExam.status}
-                                onChange={e => setEditingExam({ ...editingExam, status: e.target.value as any })}
-                            >
-                                <option value="Aberto">Aberto</option>
-                                <option value="Finalizado">Finalizado</option>
-                                <option value="Previsto">Previsto</option>
+                            <input type="number" className="w-full p-3 border rounded-xl" value={editingExam.year} onChange={e => setEditingExam({ ...editingExam, year: parseInt(e.target.value) })} />
+                            <select className="w-full p-3 border rounded-xl" value={editingExam.level} onChange={e => setEditingExam({ ...editingExam, level: e.target.value as any })}>
+                                <option value="Fundamental">Fundamental</option>
+                                <option value="Médio">Médio</option>
+                                <option value="Superior">Superior</option>
                             </select>
                         </div>
-                        <button
-                            onClick={handleUpdateExam}
-                            className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700"
-                        >
-                            Salvar Alterações
-                        </button>
+                        <select className="w-full p-3 border rounded-xl" value={editingExam.status} onChange={e => setEditingExam({ ...editingExam, status: e.target.value as any })}>
+                            <option value="Aberto">Aberto</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Previsto">Previsto</option>
+                        </select>
+                        <button onClick={handleUpdateExam} className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold">Salvar Alterações</button>
                     </div>
                 )}
             </Modal>
 
-            {/* Document Link Modal */}
+            {/* Document Modal */}
             <Modal isOpen={isDocModalOpen} onClose={() => { setIsDocModalOpen(false); setSelectedExamForDoc(null); }} title="Adicionar Documento">
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Nome do Documento *</label>
-                        <input
-                            type="text"
-                            value={newDoc.name}
-                            onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
-                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                            placeholder="Ex: Prova Completa, Gabarito, Edital"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Tipo</label>
-                        <select
-                            value={newDoc.type}
-                            onChange={(e) => setNewDoc({ ...newDoc, type: e.target.value })}
-                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                        >
-                            <option value="PDF">PDF</option>
-                            <option value="DOCX">DOCX</option>
-                            <option value="XLSX">XLSX</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Link do Documento *</label>
-                        <input
-                            type="url"
-                            value={newDoc.link}
-                            onChange={(e) => setNewDoc({ ...newDoc, link: e.target.value })}
-                            className="w-full p-3 border-2 border-slate-200 rounded-xl outline-none focus:border-sky-500"
-                            placeholder="https://drive.google.com/... ou outro link"
-                        />
-                        <p className="text-xs text-slate-500 mt-1">
-                            <i className="fas fa-info-circle mr-1"></i>
-                            Cole o link direto para download (Google Drive, Dropbox, etc.)
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleAddDocument}
-                        disabled={uploading}
-                        className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700 disabled:opacity-50"
-                    >
-                        {uploading ? <i className="fas fa-circle-notch animate-spin"></i> : 'Adicionar Documento'}
+                    <input type="text" value={newDoc.name} onChange={e => setNewDoc({ ...newDoc, name: e.target.value })} className="w-full p-3 border rounded-xl" placeholder="Nome do Documento (Ex: Prova Objetiva)" />
+                    <select value={newDoc.type} onChange={e => setNewDoc({ ...newDoc, type: e.target.value })} className="w-full p-3 border rounded-xl">
+                        <option value="PDF">PDF</option>
+                        <option value="DOCX">DOCX</option>
+                        <option value="XLSX">XLSX</option>
+                    </select>
+                    <input type="url" value={newDoc.link} onChange={e => setNewDoc({ ...newDoc, link: e.target.value })} className="w-full p-3 border rounded-xl" placeholder="Link do arquivo" />
+                    <button onClick={handleAddDocument} disabled={uploading} className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold disabled:opacity-50">
+                        {uploading ? 'Carregando...' : 'Adicionar Documento'}
                     </button>
                 </div>
             </Modal>
 
-            {selectedExam ? (
-                <div className="space-y-8 animate-fade-in">
-                    <button
-                        onClick={() => setSelectedExam(null)}
-                        className="text-sky-600 font-bold flex items-center gap-2 hover:underline mb-4"
-                    >
-                        <i className="fas fa-arrow-left"></i> Voltar para lista de concursos
+            {/* Main Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                        <i className="fas fa-file-signature text-sky-600"></i> Provas Anteriores
+                    </h2>
+                    <p className="text-slate-500 mt-1">Explore e baixe provas por instituição e estado.</p>
+                </div>
+                {isAdmin && (
+                    <button onClick={() => setIsBlockModalOpen(true)} className="bg-sky-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-700 shadow-lg flex items-center gap-2">
+                        <i className="fas fa-layer-group"></i> Novo Concurso
                     </button>
+                )}
+            </div>
 
-                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden pb-12">
-                        <div className="bg-gradient-to-r from-sky-600 to-sky-700 p-8 text-white mb-8">
-                            <h2 className="text-3xl md:text-5xl font-extrabold mb-2 leading-none">{selectedExam.institution}</h2>
-                        </div>
-
-                        <div className="px-8 space-y-12">
-                            {yearsAvailable.map(year => {
-                                const yearExams = institutionExams.filter(e => e.year === year);
-                                return (
-                                    <div key={year} className="space-y-6">
-                                        <div className="flex items-center gap-4">
-                                            <h4 className="text-xl font-extrabold text-slate-700 min-w-fit">Ano {year}</h4>
-                                            <div className="h-px bg-slate-100 flex-1"></div>
-                                        </div>
-
-                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {yearExams.map((ex) => (
-                                                <div key={ex.id} className="contents">
-                                                    {/* Documents List */}
-                                                    {documents.filter(d => d.exam_id === ex.id).map(doc => (
-                                                        <div key={doc.id} className="p-6 border-2 border-slate-50 rounded-2xl hover:border-sky-200 transition-all group flex flex-col justify-between bg-slate-50/50 relative">
-                                                            {isAdmin && (
-                                                                <button onClick={() => handleDeleteDocument(doc.id)} className="absolute top-2 right-2 text-red-300 hover:text-red-500 z-10">
-                                                                    <i className="fas fa-trash"></i>
-                                                                </button>
-                                                            )}
-                                                            <div>
-                                                                <i className={`fas fa-file-pdf text-red-500 text-3xl mb-4`}></i>
-                                                                <h4 className="font-bold text-slate-800 mb-1 leading-tight">{doc.name}</h4>
-                                                                <p className="text-xs text-slate-400 uppercase font-bold tracking-tighter">Formato: {doc.type}</p>
-                                                            </div>
-                                                            <a href={doc.url} target="_blank" rel="noreferrer" className="mt-6 w-full py-3 bg-white border border-slate-200 text-sky-600 rounded-xl font-bold group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all flex items-center justify-center gap-2">
-                                                                <i className="fas fa-download"></i> Baixar Arquivo
-                                                            </a>
-                                                        </div>
-                                                    ))}
-
-                                                    {/* Add Document Button for Admin */}
-                                                    {isAdmin && (
-                                                        <button
-                                                            onClick={() => openDocModal(ex.id)}
-                                                            className="p-6 border-2 border-dashed border-sky-200 rounded-2xl flex flex-col items-center justify-center text-sky-500 hover:bg-sky-50 transition cursor-pointer min-h-[200px]"
-                                                        >
-                                                            <i className="fas fa-link text-3xl mb-2"></i>
-                                                            <span className="font-bold text-sm text-center">Adicionar Link para<br />{ex.role}</span>
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+            {!selectedGroup && (
+                <>
+                    {/* Filter Bar */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div className="relative lg:col-span-1">
+                                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" placeholder="Buscar..." value={filter} onChange={e => setFilter(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-sky-500 bg-slate-50" />
+                            </div>
+                            <select value={ufFilter} onChange={e => setUfFilter(e.target.value)} className="px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-sky-500 bg-slate-50">
+                                <option value="Todos">Todos os Estados</option>
+                                {Array.from(new Set(exams.map(e => e.uf || 'Nacional'))).sort().map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                            </select>
+                            <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-sky-500 bg-slate-50">
+                                <option value="Todos">Todos os Anos</option>
+                                {Array.from(new Set(exams.map(e => e.year.toString()))).sort((a, b) => parseInt(b) - parseInt(a)).map(year => <option key={year} value={year}>{year}</option>)}
+                            </select>
+                            <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} className="px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-sky-500 bg-slate-50">
+                                <option value="Todos">Escolaridade</option>
+                                <option value="Fundamental">Fundamental</option>
+                                <option value="Médio">Médio</option>
+                                <option value="Superior">Superior</option>
+                            </select>
+                            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-sky-500 bg-slate-50">
+                                <option value="Todos">Todos os Cargos</option>
+                                {Array.from(new Set(exams.map(e => e.role))).map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
                         </div>
                     </div>
-                </div>
-            ) : (
-                <>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-3">
-                                <i className="fas fa-file-signature text-sky-600"></i> Provas Anteriores
-                            </h2>
-                            <p className="text-slate-500 mt-1 text-sm">Explore e baixe provas de diversos concursos.</p>
-                        </div>
+
+                    {/* Institution Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {uniqueGroups.map((group, idx) => (
+                            <div
+                                key={idx}
+                                onClick={() => setSelectedGroup(group)}
+                                className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-sky-400 hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden h-48 flex flex-col justify-between"
+                            >
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <i className="fas fa-university text-7xl text-sky-900"></i>
+                                </div>
+                                <div className="relative">
+                                    <span className="inline-block px-3 py-1 bg-sky-50 text-sky-600 rounded-full text-xs font-black mb-3">
+                                        {group.uf}
+                                    </span>
+                                    <h3 className="text-xl font-black text-slate-800 line-clamp-2 leading-tight">
+                                        {group.institution}
+                                    </h3>
+                                </div>
+                                <div className="flex justify-between items-center relative">
+                                    <span className="text-xs font-bold text-slate-400">
+                                        {filteredExams.filter(e => e.institution === group.institution && (e.uf || 'Nacional') === group.uf).length} provas disponíveis
+                                    </span>
+                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-sky-600 group-hover:text-white transition-all">
+                                        <i className="fas fa-chevron-right text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {selectedGroup && !selectedExam && (
+                <div className="animate-fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <button onClick={() => setSelectedGroup(null)} className="text-sky-600 font-bold flex items-center gap-2 hover:underline">
+                            <i className="fas fa-arrow-left"></i> Voltar para lista
+                        </button>
                         {isAdmin && (
-                            <button onClick={() => setIsExamModalOpen(true)} className="w-full sm:w-auto bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700 shadow-lg flex items-center justify-center gap-2">
-                                <i className="fas fa-plus"></i> Novo Concurso
+                            <button
+                                onClick={() => setIsExamDetailModalOpen(true)}
+                                className="bg-sky-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-sky-700 shadow flex items-center gap-2"
+                            >
+                                <i className="fas fa-plus"></i> Novo Cargo/Ano
                             </button>
                         )}
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 mb-8">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wide">Busca Direta</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Instituição ou cargo..."
-                                        value={filter}
-                                        onChange={(e) => setFilter(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-sky-50 focus:border-sky-500 outline-none transition-all text-slate-700 bg-slate-50 shadow-sm"
-                                    />
-                                    <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wide">Escolaridade</label>
-                                    <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-sky-50 focus:border-sky-500 outline-none text-slate-700 cursor-pointer shadow-sm bg-slate-50">
-                                        <option value="Todos">Todos</option>
-                                        <option value="Fundamental">Fundamental</option>
-                                        <option value="Médio">Médio</option>
-                                        <option value="Superior">Superior</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wide">Cargos</label>
-                                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-sky-50 focus:border-sky-500 outline-none text-slate-700 cursor-pointer shadow-sm bg-slate-50">
-                                        <option value="Todos">Todos</option>
-                                        {uniqueRoles.map(role => (
-                                            <option key={role} value={role}>{role}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[600px]">
-                                <thead>
-                                    <tr className="bg-slate-50 border-b">
-                                        <th className="px-6 py-4 font-bold text-slate-700">Instituição</th>
-                                        <th className="px-6 py-4 font-bold text-slate-700">Cargo</th>
-                                        <th className="px-6 py-4 font-bold text-slate-700 text-center">Ano / Status</th>
-                                        <th className="px-6 py-4 font-bold text-slate-700 text-right">Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredExams.map((exam) => (
-                                        <tr key={exam.id} className="border-b hover:bg-sky-50/30 transition-colors group">
-                                            <td className="px-6 py-4 relative flex items-center gap-3">
-                                                {isAdmin && (
-                                                    <>
-                                                        <button onClick={(e) => openEditExamModal(exam, e)} className="text-slate-300 hover:text-sky-500 transition-colors w-8 h-8 rounded-full hover:bg-sky-50 flex items-center justify-center">
-                                                            <i className="fas fa-edit"></i>
-                                                        </button>
-                                                        <button onClick={(e) => handleDeleteExam(exam.id, e)} className="text-slate-300 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center">
-                                                            <i className="fas fa-trash"></i>
-                                                        </button>
-                                                    </>
-                                                )}
-                                                <button
-                                                    onClick={() => setSelectedExam(exam)}
-                                                    className="font-bold text-slate-800 hover:text-sky-600 transition-colors text-lg text-left"
-                                                >
-                                                    {exam.institution}
-                                                </button>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-600">{exam.role}</td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-slate-500 text-sm font-bold">{exam.year}</span>
-                                                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${exam.status === 'Aberto' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`}>{exam.status}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => setSelectedExam(exam)}
-                                                    className="bg-sky-50 text-sky-600 px-4 py-2 rounded-xl font-bold hover:bg-sky-600 hover:text-white transition-all text-sm flex items-center gap-2 ml-auto"
-                                                >
-                                                    Ver Provas <i className="fas fa-chevron-right text-[10px]"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                        <div className="bg-gradient-to-r from-sky-600 to-sky-700 p-8 text-white">
+                            <span className="text-sky-100 font-bold uppercase tracking-widest text-sm mb-2 block">{selectedGroup.uf}</span>
+                            <h2 className="text-4xl font-black">{selectedGroup.institution}</h2>
                         </div>
 
-                        {/* Mobile List View */}
-                        <div className="md:hidden divide-y">
-                            {filteredExams.map((exam) => (
-                                <div key={exam.id} className="p-4 bg-white hover:bg-sky-50 transition-colors" onClick={() => setSelectedExam(exam)}>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-slate-800 text-lg">{exam.institution}</h4>
-                                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${exam.status === 'Aberto' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`}>
-                                            {exam.status}
-                                        </span>
-                                    </div>
-                                    <p className="text-slate-600 text-sm mb-3">{exam.role}</p>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-slate-400 font-bold">{exam.year}</span>
-                                        <div className="flex gap-4">
-                                            {isAdmin && (
-                                                <div className="flex gap-2">
-                                                    <button onClick={(e) => { e.stopPropagation(); openEditExamModal(exam, e); }} className="text-sky-500 p-2"><i className="fas fa-edit"></i></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteExam(exam.id, e); }} className="text-red-400 p-2"><i className="fas fa-trash"></i></button>
-                                                </div>
-                                            )}
-                                            <span className="text-sky-600 font-bold flex items-center gap-1">
-                                                Detalhes <i className="fas fa-chevron-right text-[8px]"></i>
-                                            </span>
+                        <div className="p-8">
+                            <h3 className="text-lg font-bold text-slate-700 mb-6">Selecione o cargo e ano da prova:</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {examsInGroup.map(exam => (
+                                    <div
+                                        key={exam.id}
+                                        onClick={() => setSelectedExam(exam)}
+                                        className="p-5 border-2 border-slate-50 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all cursor-pointer group relative"
+                                    >
+                                        {isAdmin && (
+                                            <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={(e) => openEditExamModal(exam, e)} className="p-2 text-sky-400 hover:text-sky-600"><i className="fas fa-edit"></i></button>
+                                                <button onClick={(e) => handleDeleteExam(exam.id, e)} className="p-2 text-red-300 hover:text-red-500"><i className="fas fa-trash"></i></button>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-lg font-black text-slate-800">{exam.role}</span>
+                                            <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-slate-100">{exam.year}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                            <span className={`px-2 py-0.5 rounded ${exam.status === 'Aberto' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{exam.status}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="text-slate-400">{exam.level}</span>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                        {filteredExams.length === 0 && (
-                            <div className="p-12 text-center text-slate-400">
-                                <p className="text-lg">Nenhum concurso encontrado.</p>
+                                ))}
                             </div>
-                        )}
+                        </div>
                     </div>
-                </>
+                </div>
+            )}
+
+            {selectedExam && (
+                <div className="animate-fade-in">
+                    <button onClick={() => setSelectedExam(null)} className="text-sky-600 font-bold flex items-center gap-2 hover:underline mb-6">
+                        <i className="fas fa-arrow-left"></i> Voltar para {selectedExam.institution} ({selectedExam.role})
+                    </button>
+
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                        <div className="bg-slate-800 p-8 text-white flex justify-between items-end">
+                            <div>
+                                <h2 className="text-3xl font-black mb-1">{selectedExam.institution}</h2>
+                                <p className="text-slate-400 font-bold">{selectedExam.role} - {selectedExam.year} ({selectedExam.level})</p>
+                            </div>
+                            {isAdmin && (
+                                <button onClick={() => openDocModal(selectedExam.id)} className="bg-sky-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-sky-700 shadow-lg">
+                                    Adicionar Documento
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="p-8">
+                            {documents.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400">
+                                    <i className="fas fa-folder-open text-5xl mb-4 opacity-20"></i>
+                                    <p className="font-bold">Nenhum documento disponível para esta prova.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {documents.map(doc => (
+                                        <div key={doc.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-sky-500 transition-all relative">
+                                            {isAdmin && (
+                                                <button onClick={() => handleDeleteDocument(doc.id)} className="absolute top-4 right-4 text-red-200 hover:text-red-500">
+                                                    <i className="fas fa-trash"></i>
+                                                </button>
+                                            )}
+                                            <div className="mb-4">
+                                                <i className={`fas ${doc.type === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-word text-blue-500'} text-4xl`}></i>
+                                            </div>
+                                            <h4 className="font-black text-slate-800 mb-4">{doc.name}</h4>
+                                            <a href={doc.url} target="_blank" rel="noreferrer" className="w-full py-3 bg-white border-2 border-slate-200 text-sky-600 rounded-xl font-black text-center block group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all">
+                                                <i className="fas fa-download mr-2"></i> Baixar {doc.type}
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
 };
 
 export default Concursos;
+
