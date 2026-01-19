@@ -620,16 +620,6 @@ const Concursos: React.FC = () => {
                         title={viewerTitle}
                     ></iframe>
                 </div>
-                <div className="mt-4 flex justify-end">
-                    <a
-                        href={viewerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sky-600 font-bold hover:underline flex items-center gap-2"
-                    >
-                        <i className="fas fa-external-link-alt"></i> Abrir em nova aba
-                    </a>
-                </div>
             </Modal>
         </div>
     );
