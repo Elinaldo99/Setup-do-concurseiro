@@ -178,11 +178,14 @@ const Concursos: React.FC = () => {
         e.stopPropagation();
         if (!confirm(`Tem certeza? Isso apagará a instituição "${institution} - ${uf}" e todas as provas vinculadas a ela.`)) return;
 
+        const targetIds = exams
+            .filter(e => e.institution === institution && (e.uf || 'Nacional') === uf)
+            .map(e => e.id);
+
         const { error } = await supabase
             .from('exams')
             .delete()
-            .eq('institution', institution)
-            .eq('uf', uf);
+            .in('id', targetIds);
 
         if (error) {
             alert('Erro ao excluir instituição');
@@ -205,14 +208,17 @@ const Concursos: React.FC = () => {
     const handleUpdateBlock = async () => {
         if (!editingBlock) return;
 
+        const targetIds = exams
+            .filter(e => e.institution === editingBlock.originalInstitution && (e.uf || 'Nacional') === editingBlock.originalUf)
+            .map(e => e.id);
+
         const { error } = await supabase
             .from('exams')
             .update({
                 institution: editingBlock.institution,
                 uf: editingBlock.uf
             })
-            .eq('institution', editingBlock.originalInstitution)
-            .eq('uf', editingBlock.originalUf);
+            .in('id', targetIds);
 
         if (error) {
             alert('Erro ao atualizar instituição');
