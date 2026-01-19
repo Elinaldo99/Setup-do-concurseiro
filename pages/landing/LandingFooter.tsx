@@ -52,7 +52,7 @@ export const LandingFooter: React.FC = () => {
 
                     <div>
                         <h4 className="text-white font-bold mb-6 text-lg">Precisa de Ajuda?</h4>
-                        <p className="mb-4 text-sm">Fale com nosso suporte oficial via WhatsApp para dúvidas rápidas.</p>
+                        <p className="mb-4 text-sm">Fale com nosso suporte oficial via Telegram para dúvidas rápidas.</p>
                         <a
                             href="https://wa.me/5500000000000"
                             className="bg-sky-600/10 text-sky-400 border border-sky-500/20 px-6 py-3 rounded-xl font-bold hover:bg-sky-600 hover:text-white transition-all flex items-center justify-center space-x-2"
@@ -64,7 +64,7 @@ export const LandingFooter: React.FC = () => {
                 </div>
 
                 <div className="pt-8 border-t border-slate-800 text-xs text-center">
-                    <p>© {new Date().getFullYear()} Setup do Concurseiro. Todos os direitos reservados. Material protegido por direitos autorais.</p>
+                    <p>© {new Date().getFullYear()} Setup do Concurseiro. Todos os direitos reservados.</p>
                 </div>
             </div>
         </footer>

@@ -6,11 +6,11 @@ export const FAQ: React.FC = () => {
     const faqs = [
         {
             q: "O material é digital ou físico?",
-            a: "O material é 100% digital em formato PDF organizado. Você recebe o link para download imediato após a compra. Menciona-se 'Vantagens do Pendrive' pois o material é otimizado para que você possa salvar em um pendrive ou HD externo e estudar offline."
+            a: "O material é 100% digital em formato PDF e Links Externos. Você recebe acesso imediato após a compra. Menciona-se 'Vantagens do Pendrive' pois o material é otimizado para que você possa salvar em um pendrive ou HD externo e estudar offline."
         },
         {
             q: "Como recebo o acesso?",
-            a: "Assim que o pagamento for confirmado, você receberá um e-mail com todas as instruções e o link exclusivo para baixar seu Pack completo."
+            a: "Assim que o pagamento for confirmado, você será redirecionada para area de login de acesso e terá todas as informações lá."
         },
         {
             q: "O material serve para qualquer concurso?",
