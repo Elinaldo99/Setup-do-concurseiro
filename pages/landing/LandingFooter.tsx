@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GraduationCap, Instagram, Mail, MessageCircle } from 'lucide-react';
+import { Facebook, GraduationCap, Instagram, Mail, MessageCircle } from 'lucide-react';
 
 export const LandingFooter: React.FC = () => {
     const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -32,9 +32,9 @@ export const LandingFooter: React.FC = () => {
                             O Setup do Concurseiro é a maior plataforma de organização e materiais em PDF para estudantes que buscam performance e resultados reais em concursos e na vida acadêmica.
                         </p>
                         <div className="flex space-x-4">
-                            <a href="#" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><Instagram size={20} /></a>
-                            <a href="#" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><MessageCircle size={20} /></a>
-                            <a href="#" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><Mail size={20} /></a>
+                            <a href="https://www.facebook.com/profile.php?id=61585865818712" target="_blank" rel="noopener noreferrer" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><Facebook size={20} /></a>
+                            <a href="https://t.me/setupdoconcurseiro" target="_blank" rel="noopener noreferrer" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><MessageCircle size={20} /></a>
+                            <a href="mailto:setupdoconcurseiro@gmail.com" className="p-3 bg-slate-800 rounded-xl hover:text-white hover:bg-sky-600 transition-all"><Mail size={20} /></a>
                         </div>
                     </div>
 
@@ -54,7 +54,8 @@ export const LandingFooter: React.FC = () => {
                         <h4 className="text-white font-bold mb-6 text-lg">Precisa de Ajuda?</h4>
                         <p className="mb-4 text-sm">Fale com nosso suporte oficial via Telegram para dúvidas rápidas.</p>
                         <a
-                            href="https://wa.me/5500000000000"
+                            href="https://t.me/setupdoconcurseirobot"
+                            target="_blank" rel="noopener noreferrer"
                             className="bg-sky-600/10 text-sky-400 border border-sky-500/20 px-6 py-3 rounded-xl font-bold hover:bg-sky-600 hover:text-white transition-all flex items-center justify-center space-x-2"
                         >
                             <MessageCircle className="h-5 w-5" />
