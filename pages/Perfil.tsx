@@ -368,6 +368,56 @@ const Perfil: React.FC = () => {
                             ))}
                         </div>
                     </div>
+
+                    <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-6">
+                        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i className="fas fa-headset text-sky-600"></i> Suporte Exclusivo
+                        </h4>
+                        <div className="space-y-3">
+                            <a
+                                href="https://t.me/setupdoconcurseirobot"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center justify-between p-3 bg-sky-50 rounded-xl hover:bg-sky-100 transition-all group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center text-white">
+                                        <i className="fab fa-telegram-plane"></i>
+                                    </div>
+                                    <span className="font-bold text-sky-900 text-sm">Bot Suporte</span>
+                                </div>
+                                <i className="fas fa-external-link-alt text-sky-300 group-hover:text-sky-600 text-xs"></i>
+                            </a>
+
+                            <div className="grid grid-cols-3 gap-2">
+                                <a
+                                    href="https://t.me/setupdoconcurseiro"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="aspect-square bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 hover:bg-sky-600 hover:text-white transition-all"
+                                    title="Canal Telegram"
+                                >
+                                    <i className="fab fa-telegram-plane"></i>
+                                </a>
+                                <a
+                                    href="https://www.facebook.com/profile.php?id=61585865818712"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="aspect-square bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 hover:bg-sky-600 hover:text-white transition-all"
+                                    title="Facebook"
+                                >
+                                    <i className="fab fa-facebook-f"></i>
+                                </a>
+                                <a
+                                    href="mailto:setupdoconcurseiro@gmail.com"
+                                    className="aspect-square bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 hover:bg-sky-600 hover:text-white transition-all"
+                                    title="E-mail"
+                                >
+                                    <i className="fas fa-envelope"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Goals & Progress */}
