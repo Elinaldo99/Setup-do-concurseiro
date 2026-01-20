@@ -15,6 +15,7 @@ export interface Exam {
   level: 'Fundamental' | 'Médio' | 'Superior';
   status: 'Aberto' | 'Finalizado' | 'Previsto';
   uf?: string;
+  banca?: string;
 }
 
 export interface Tip {

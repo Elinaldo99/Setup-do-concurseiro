@@ -48,9 +48,9 @@ const Concursos: React.FC = () => {
         uf: ''
     });
 
-    // State for adding a specific Exam (Role/Year/Level)
     const [newExamDetail, setNewExamDetail] = useState<Partial<Exam>>({
         role: '',
+        banca: '',
         year: new Date().getFullYear(),
         level: 'Médio',
         status: 'Aberto'
@@ -127,6 +127,7 @@ const Concursos: React.FC = () => {
             setIsExamDetailModalOpen(false);
             setNewExamDetail({
                 role: '',
+                banca: '',
                 year: new Date().getFullYear(),
                 level: 'Médio',
                 status: 'Aberto'
@@ -161,7 +162,8 @@ const Concursos: React.FC = () => {
                 year: editingExam.year,
                 level: editingExam.level,
                 status: editingExam.status,
-                uf: editingExam.uf
+                uf: editingExam.uf,
+                banca: editingExam.banca
             })
             .eq('id', editingExam.id);
 
@@ -321,6 +323,13 @@ const Concursos: React.FC = () => {
                         value={newExamDetail.role}
                         onChange={e => setNewExamDetail({ ...newExamDetail, role: e.target.value })}
                     />
+                    <input
+                        type="text"
+                        placeholder="Banca (ex: Vunesp, FGV)"
+                        className="w-full p-2 border rounded-xl"
+                        value={newExamDetail.banca}
+                        onChange={e => setNewExamDetail({ ...newExamDetail, banca: e.target.value })}
+                    />
                     <div className="flex gap-2">
                         <input
                             type="number"
@@ -359,6 +368,7 @@ const Concursos: React.FC = () => {
                         <input type="text" className="w-full p-3 border rounded-xl" value={editingExam.institution} onChange={e => setEditingExam({ ...editingExam, institution: e.target.value })} />
                         <input type="text" placeholder="UF" className="w-full p-3 border rounded-xl" value={editingExam.uf || ''} onChange={e => setEditingExam({ ...editingExam, uf: e.target.value.toUpperCase() })} />
                         <input type="text" className="w-full p-3 border rounded-xl" value={editingExam.role} onChange={e => setEditingExam({ ...editingExam, role: e.target.value })} />
+                        <input type="text" placeholder="Banca" className="w-full p-3 border rounded-xl" value={editingExam.banca || ''} onChange={e => setEditingExam({ ...editingExam, banca: e.target.value })} />
                         <div className="grid grid-cols-2 gap-4">
                             <input type="number" className="w-full p-3 border rounded-xl" value={editingExam.year} onChange={e => setEditingExam({ ...editingExam, year: parseInt(e.target.value) })} />
                             <select className="w-full p-3 border rounded-xl" value={editingExam.level} onChange={e => setEditingExam({ ...editingExam, level: e.target.value as any })}>
@@ -538,7 +548,10 @@ const Concursos: React.FC = () => {
                                             </div>
                                         )}
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="text-lg font-black text-slate-800">{exam.role}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-lg font-black text-slate-800">{exam.role}</span>
+                                                {exam.banca && <span className="text-xs font-bold text-sky-600 uppercase tracking-wider">{exam.banca}</span>}
+                                            </div>
                                             <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-slate-100">{exam.year}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs font-bold">
