@@ -6,6 +6,7 @@ import { useAdmin } from '../hooks/useAdmin';
 import Modal from '../components/Modal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { recordActivity } from '../lib/activityTracker';
 
 interface SubjectTopic {
     id: string;
@@ -96,6 +97,9 @@ const Materias: React.FC = () => {
     useEffect(() => {
         if (selectedTopic) {
             setPreviewUrl(selectedTopic.external_link || null);
+            if (selectedTopic.external_link) {
+                recordActivity('material_view', { topicId: selectedTopic.id, title: selectedTopic.title });
+            }
         }
     }, [selectedTopic]);
 

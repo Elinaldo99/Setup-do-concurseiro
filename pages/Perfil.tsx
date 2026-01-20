@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { Goal, Achievement } from '../types';
 import Modal from '../components/Modal';
+import { getActivityStats, recordActivity } from '../lib/activityTracker';
 
 interface Profile {
     id: string;
@@ -29,11 +30,12 @@ const Perfil: React.FC = () => {
     const [goals, setGoals] = useState<Goal[]>([]);
     const [newGoalText, setNewGoalText] = useState('');
     const [scheduleCount, setScheduleCount] = useState(0);
+    const [stats, setStats] = useState({ streak: 0, dailyProd: 0, weeklyProd: 0, totalMaterialViews: 0 });
     const [achievements, setAchievements] = useState<Achievement[]>([
         { id: '1', title: 'Primeiro Passo', description: 'Criou seu primeiro cronograma', icon: 'fa-walking', unlocked: false },
         { id: '2', title: 'Focado', description: 'Completou 5 metas pessoais', icon: 'fa-bullseye', unlocked: false },
-        { id: '3', title: 'Guru da Revisão', description: 'Acessou 3 resumos de IA', icon: 'fa-brain', unlocked: true },
-        { id: '4', title: 'Maratonista', description: 'Estudou por 7 dias seguidos', icon: 'fa-running', unlocked: false },
+        { id: '3', title: 'Guru da Revisão', description: 'Visualizou 10 materiais de estudo', icon: 'fa-brain', unlocked: false },
+        { id: '4', title: 'Maratonista', description: 'Manteve uma ofensiva de 7 dias', icon: 'fa-fire', unlocked: false },
     ]);
 
     useEffect(() => {
@@ -98,14 +100,24 @@ const Perfil: React.FC = () => {
 
     const loadGoalsAndSchedule = () => {
         const savedGoals = localStorage.getItem('study_goals');
-        if (savedGoals) setGoals(JSON.parse(savedGoals));
+        const goalsArr = savedGoals ? JSON.parse(savedGoals) : [];
+        setGoals(goalsArr);
+
+        const currentStats = getActivityStats();
+        setStats(currentStats);
 
         const savedSchedule = localStorage.getItem('study_schedule');
-        if (savedSchedule) {
-            const parsed = JSON.parse(savedSchedule);
-            setScheduleCount(parsed.length);
-            if (parsed.length > 0) unlockAchievement('1');
-        }
+        const scheduleArr = savedSchedule ? JSON.parse(savedSchedule) : [];
+        setScheduleCount(scheduleArr.length);
+
+        // Update Achievements
+        setAchievements(prev => prev.map(a => {
+            if (a.id === '1' && scheduleArr.length > 0) return { ...a, unlocked: true };
+            if (a.id === '2' && goalsArr.filter((g: any) => g.completed).length >= 5) return { ...a, unlocked: true };
+            if (a.id === '3' && currentStats.totalMaterialViews >= 10) return { ...a, unlocked: true };
+            if (a.id === '4' && currentStats.streak >= 7) return { ...a, unlocked: true };
+            return a;
+        }));
     };
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,8 +216,14 @@ const Perfil: React.FC = () => {
     const saveGoals = (updatedGoals: Goal[]) => {
         setGoals(updatedGoals);
         localStorage.setItem('study_goals', JSON.stringify(updatedGoals));
+
+        // Track goal completion as activity
         const completedCount = updatedGoals.filter(g => g.completed).length;
-        if (completedCount >= 5) unlockAchievement('2');
+        if (completedCount > goals.filter(g => g.completed).length) {
+            recordActivity('goal_completion');
+        }
+
+        loadGoalsAndSchedule(); // Refresh stats and achievements
     };
 
     const unlockAchievement = (id: string) => {
@@ -480,19 +498,19 @@ const Perfil: React.FC = () => {
                                 <div>
                                     <div className="flex justify-between text-xs font-bold text-slate-500 mb-1 tracking-wide">
                                         <span>FOCO DIÁRIO</span>
-                                        <span>85%</span>
+                                        <span>{stats.dailyProd}%</span>
                                     </div>
                                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-sky-500 w-[85%] rounded-full"></div>
+                                        <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${stats.dailyProd}%` }}></div>
                                     </div>
                                 </div>
                                 <div>
                                     <div className="flex justify-between text-xs font-bold text-slate-500 mb-1 tracking-wide">
                                         <span>REVISÃO SEMANAL</span>
-                                        <span>40%</span>
+                                        <span>{stats.weeklyProd}%</span>
                                     </div>
                                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-orange-400 w-[40%] rounded-full"></div>
+                                        <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${stats.weeklyProd}%` }}></div>
                                     </div>
                                 </div>
                             </div>
@@ -500,8 +518,12 @@ const Perfil: React.FC = () => {
                         <div className="bg-gradient-to-br from-sky-500 to-indigo-600 rounded-3xl shadow-lg p-8 text-white relative overflow-hidden">
                             <div className="relative z-10">
                                 <h4 className="text-xl font-bold mb-2 tracking-wide">Streak de Estudo</h4>
-                                <p className="text-4xl font-extrabold mb-4 flex items-baseline gap-2">7 <span className="text-lg font-medium opacity-80 uppercase">dias</span></p>
-                                <p className="text-sm opacity-90 leading-snug">Você está entre os 5% melhores estudantes da plataforma hoje! Continue firme.</p>
+                                <p className="text-4xl font-extrabold mb-4 flex items-baseline gap-2">{stats.streak} <span className="text-lg font-medium opacity-80 uppercase">dias</span></p>
+                                <p className="text-sm opacity-90 leading-snug">
+                                    {stats.streak === 0 ? "Comece sua jornada hoje!" :
+                                        stats.streak < 7 ? "Mantenha o ritmo para desbloquear conquistas!" :
+                                            "Você está com uma ofensiva incrível! Continue assim."}
+                                </p>
                             </div>
                             <i className="fas fa-fire absolute right-[-10px] bottom-[-10px] text-[120px] text-white/10 rotate-12 pointer-events-none"></i>
                         </div>

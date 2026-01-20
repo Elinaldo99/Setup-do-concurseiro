@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { recordActivity } from './lib/activityTracker';
 import Home from './pages/Home';
 import LandingPage from './pages/LandingPage';
 import Materias from './pages/Materias';
@@ -28,6 +29,12 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
+
+  React.useEffect(() => {
+    if (user) {
+      recordActivity('login');
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col">
