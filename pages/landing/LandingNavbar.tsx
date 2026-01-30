@@ -64,8 +64,9 @@ export const LandingNavbar: React.FC = () => {
                             </a>
                         ))}
                         <a
-                            href="#preco"
-                            onClick={(e) => scrollToSection(e, '#preco')}
+                            href="https://pay.kiwify.com.br/iIm4rTa"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="bg-sky-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
                         >
                             GARANTIR ACESSO
@@ -105,11 +106,9 @@ export const LandingNavbar: React.FC = () => {
                             </a>
                         ))}
                         <a
-                            href="#preco"
-                            onClick={(e) => {
-                                scrollToSection(e, '#preco');
-                                setIsMenuOpen(false);
-                            }}
+                            href="https://pay.kiwify.com.br/iIm4rTa"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="bg-sky-600 text-white px-6 py-3 rounded-xl font-bold text-center"
                         >
                             GARANTIR ACESSO

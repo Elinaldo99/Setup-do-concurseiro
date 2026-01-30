@@ -1,8 +1,9 @@
 
-import React from 'react';
-import { Target, Zap, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Target, Zap, BarChart3, ShieldCheck, ArrowRight, X } from 'lucide-react';
 
 export const BonusSection: React.FC = () => {
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
     const steps = [
         {
             icon: <Target className="h-8 w-8 text-white" />,
@@ -85,15 +86,81 @@ export const BonusSection: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="mt-16 text-center">
-                    <div className="inline-flex items-center space-x-4 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl transform hover:scale-105 transition-all cursor-pointer group">
-                        <span className="font-black text-sm uppercase tracking-widest">Ver demonstração do método</span>
-                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center group-hover:translate-x-2 transition-transform">
-                            <ArrowRight className="h-4 w-4" />
+                <div className="mt-20 max-w-4xl mx-auto">
+                    {/* Título acima do vídeo */}
+                    <div className="text-center mb-8">
+                        <span className="inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-black text-sm uppercase tracking-widest shadow-xl">
+                            Ver demonstração do método
+                        </span>
+                    </div>
+
+                    {/* Espaço de Vídeo (Thumbnail Interativa) */}
+                    <div
+                        onClick={() => setIsVideoModalOpen(true)}
+                        className="relative group cursor-pointer overflow-hidden rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-8 border-white transform hover:scale-[1.02] transition-all duration-500"
+                    >
+                        {/* Background / Thumbnail */}
+                        <div className="aspect-video bg-slate-900 relative overflow-hidden">
+                            <img
+                                src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1470&auto=format&fit=crop"
+                                alt="Demonstração do Método"
+                                className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500"
+                            />
+
+                            {/* Overlay com gradiente */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+
+                            {/* Botão Play centralizado */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 group-hover:scale-110 group-hover:bg-indigo-500 transition-all duration-500">
+                                    <div className="w-0 h-0 border-t-[15px] border-t-transparent border-l-[25px] border-l-white border-b-[15px] border-b-transparent ml-2"></div>
+                                </div>
+                            </div>
+
+                            {/* Texto flutuante atualizado */}
+                            <div className="absolute bottom-8 left-8 right-8 text-left">
+                                <p className="text-white font-black text-2xl md:text-3xl mb-2 italic uppercase">Veja o vídeo demonstrativo</p>
+                                <div className="flex items-center space-x-2 text-indigo-400 font-bold uppercase text-xs tracking-widest">
+                                    <Zap className="h-4 w-4" />
+                                    <span>Clique para iniciar o player interno</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Vídeo */}
+            {isVideoModalOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setIsVideoModalOpen(false)}
+                >
+                    <div
+                        className="relative w-full max-w-5xl bg-slate-900 rounded-3xl overflow-hidden shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Botão de fechar */}
+                        <button
+                            onClick={() => setIsVideoModalOpen(false)}
+                            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all group"
+                        >
+                            <X className="h-5 w-5 text-white group-hover:rotate-90 transition-transform" />
+                        </button>
+
+                        {/* Container do vídeo com aspect ratio 16:9 */}
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                            <iframe
+                                className="absolute top-0 left-0 w-full h-full"
+                                src="https://www.youtube.com/embed/lOZBQbn5gwQ?autoplay=1&mute=1"
+                                title="Demonstração do Método"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 };

@@ -27,7 +27,9 @@ export const Hero: React.FC = () => {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
                             <a
-                                href="#preco"
+                                href="https://pay.kiwify.com.br/iIm4rTa"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="w-full sm:w-auto bg-sky-600 text-white px-10 py-5 rounded-2xl font-black text-lg hover:bg-sky-700 transition-all transform hover:scale-105 shadow-2xl shadow-sky-200 flex items-center justify-center space-x-3"
                             >
                                 <span>ENTRAR NA PLATAFORMA</span>

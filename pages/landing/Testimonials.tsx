@@ -81,7 +81,9 @@ export const Testimonials: React.FC = () => {
                         <h3 className="text-2xl md:text-3xl font-bold mb-4">Pronto para montar o seu Setup?</h3>
                         <p className="text-slate-400 mb-8 text-lg">A aprovação começa com a organização certa.</p>
                         <a
-                            href="#preco"
+                            href="https://pay.kiwify.com.br/iIm4rTa"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-block bg-indigo-600 text-white font-black px-10 py-4 rounded-2xl hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-xl shadow-indigo-500/20"
                         >
                             QUERO MEU SETUP AGORA

@@ -46,7 +46,7 @@ export const LandingFooter: React.FC = () => {
                             <li><a href="#materias" onClick={(e) => scrollToSection(e, '#materias')} className="hover:text-sky-400 transition-colors">Matérias</a></li>
                             <li><a href="#depoimentos" onClick={(e) => scrollToSection(e, '#depoimentos')} className="hover:text-sky-400 transition-colors">Depoimentos</a></li>
                             <li><a href="#faq" onClick={(e) => scrollToSection(e, '#faq')} className="hover:text-sky-400 transition-colors">Dúvidas</a></li>
-                            <li><a href="#preco" onClick={(e) => scrollToSection(e, '#preco')} className="hover:text-sky-400 transition-colors">Garantir Acesso</a></li>
+                            <li><a href="https://pay.kiwify.com.br/iIm4rTa" target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors">Garantir Acesso</a></li>
                         </ul>
                     </div>
 
